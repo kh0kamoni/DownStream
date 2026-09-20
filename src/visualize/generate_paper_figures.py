@@ -91,7 +91,7 @@ class CleanPaperFigureGenerator:
         df['pub_date'] = df['published_at'].str.slice(0, 10)
         df = df[df['pub_date'] >= df['rel_start']].copy()
 
-        cat_cols = ['downstream', 'downstream_version', 'attack_vector', 'attack_complexity', 'affected_component', 'vulnerability_type']
+        cat_cols = ['downstream', 'attack_vector', 'attack_complexity', 'affected_component', 'vulnerability_type']
         num_cols = ['cvss', 'reference_count', 'files_changed_count', 'loc_added', 'loc_deleted', 'loc_delta', 'patch_hunks', 'commit_message_length', 'downstream_kernel_ver', 'is_lts', 'is_single_file_fix']
 
         for c in num_cols:
@@ -223,50 +223,59 @@ class CleanPaperFigureGenerator:
         plt.close()
 
     def generate_fig3(self) -> None:
-        """Figure 3: Top Day-Zero Feature Importances (Zero Post-Disclosure Signals)."""
-        logging.info("Generating Figure 3: Day-Zero Feature Importances...")
+        """Figure 3: Top Day-Zero Permutation Feature Importances on Prospective Test Set."""
+        logging.info("Generating Figure 3: Day-Zero Permutation Feature Importances...")
         X_train, y_train, X_test, y_test, feature_names = self.load_clean_data()
 
         clf = xgb.XGBClassifier(n_estimators=150, learning_rate=0.05, max_depth=6, eval_metric='logloss', random_state=42, n_jobs=-1)
         clf.fit(X_train, y_train)
 
-        importances = clf.feature_importances_
+        from sklearn.inspection import permutation_importance
+        perm = permutation_importance(clf, X_test[:5000], y_test[:5000], n_repeats=5, random_state=42, scoring='roc_auc')
+        importances = perm.importances_mean
+
+        # Select top 12 positive importances
         sorted_idx = np.argsort(importances)[::-1][:12]
 
         top_names = [feature_names[i] for i in sorted_idx][::-1]
-        top_vals = [importances[i] for i in sorted_idx][::-1]
+        top_vals = [max(0.0, float(importances[i])) for i in sorted_idx][::-1]
 
-        max_v = max(top_vals) if top_vals else 1.0
+        max_v = max(top_vals) if top_vals and max(top_vals) > 0 else 1.0
         norm_vals = [v / max_v * 100 for v in top_vals]
 
         label_map = {
             'commit_message_length': 'Commit Message Length (chars)',
-            'patch_hunks': 'Patch Hunk Count',
-            'files_changed_count': 'Files Modified in Patch',
+            'patch_hunks': 'Patch Hunk Complexity',
+            'files_changed_count': 'Patch Scope (Files Modified)',
             'downstream_kernel_ver': 'Downstream Base Kernel Version',
-            'is_lts': 'LTS Release Indicator',
+            'is_lts': 'LTS Maintenance Policy Indicator',
             'cvss': 'CVSS v3.1 Base Score',
-            'reference_count': 'Initial Advisory References',
-            'loc_delta': 'Patch Net Churn (LOC Delta)',
-            'loc_added': 'Patch Lines Added',
-            'loc_deleted': 'Patch Lines Deleted',
+            'reference_count': 'Advisory Reference Count',
+            'loc_delta': 'Patch Net Code Churn (Delta)',
+            'loc_added': 'Patch Code Expansion (LOC Added)',
+            'loc_deleted': 'Patch Code Reduction (LOC Deleted)',
             'is_single_file_fix': 'Single-File Surgical Patch',
             'downstream_ubuntu': 'Ecosystem: Ubuntu Pipeline',
-            'downstream_debian': 'Ecosystem: Debian Pipeline'
+            'downstream_debian': 'Ecosystem: Debian Pipeline',
+            'affected_component_mm': 'Subsystem: Memory Management (mm)',
+            'affected_component_net': 'Subsystem: Networking (net)',
+            'affected_component_bluetooth': 'Subsystem: Bluetooth Stack',
+            'vulnerability_type_out-of-bounds-read': 'Vulnerability: Out-of-Bounds Read',
+            'vulnerability_type_other': 'Vulnerability: Uncategorized CWE'
         }
         clean_labels = [label_map.get(n, n) for n in top_names]
 
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(10, 6.2))
         colors = sns.color_palette("Blues_r", len(norm_vals))
 
         bars = plt.barh(clean_labels, norm_vals, color=colors, edgecolor='gray', height=0.65)
-        for bar in bars:
+        for bar, val in zip(bars, top_vals):
             w = bar.get_width()
-            plt.text(w + 1.2, bar.get_y() + bar.get_height() / 2, f'{w:.1f}%', ha='left', va='center', fontsize=9.5, fontweight='bold')
+            plt.text(w + 1.2, bar.get_y() + bar.get_height() / 2, f'{w:.1f}% (+{val:.4f} AUC)', ha='left', va='center', fontsize=9.0, fontweight='bold')
 
-        plt.xlim(0, 115)
-        plt.xlabel('Relative Feature Importance Score (%)')
-        plt.title('Top Day-Zero Pre-Remediation Predictors of Downstream Exposure')
+        plt.xlim(0, 125)
+        plt.xlabel('Relative Permutation Importance (% of Maximum ROC-AUC Drop)')
+        plt.title('Prospective Permutation Feature Importance on Held-Out Test Set (Zero Lookahead)')
         plt.tight_layout()
         for p in [self.output_dir, self.paper_figures_dir]:
             plt.savefig(p / "fig3_feature_importance.pdf")
