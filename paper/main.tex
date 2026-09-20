@@ -1,6 +1,5 @@
-\documentclass[preprint,12pt]{elsarticle}
+\documentclass[final,5p,times,twocolumn]{elsarticle}
 
-\usepackage{lmodern}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -40,7 +39,7 @@ Our empirical measurement reveals that downstream remediation is fraught with sy
 
 \begin{graphicalabstract}
 \centering
-\includegraphics[width=0.9\textwidth]{figures/fig1_survival_remediation_latency.pdf}
+\includegraphics[width=\columnwidth]{figures/fig1_survival_remediation_latency.pdf}
 \end{graphicalabstract}
 
 \begin{highlights}
@@ -109,7 +108,7 @@ The upstream Linux kernel is developed through a distributed network of subsyste
 When an upstream developer fixes a bug with security implications, the fix is ideally tagged with:
 \begin{verbatim}
 Cc: stable@vger.kernel.org
-Fixes: <commit-hash> ("original introducing commit subject")
+Fixes: <commit-hash> ("subject")
 \end{verbatim}
 The stable maintenance bot scans for these tags, automatically cherry-picking patches onto active LTS branches (e.g., 6.6.y, 6.1.y, 5.15.y). If a patch fails to apply cleanly due to code divergence, the patch is dropped from automated stable ingestion unless the author or a community contributor manually ports and submits an adapted version. Crucially, upstream kernel policy treats all bugs as potential security bugs and generally discourages treating CVEs with special out-of-band priority, leaving downstream distributions to perform their own risk assessment~\citep{wang2020empirical}.
 
@@ -247,8 +246,8 @@ Given that downstream patch propagation requires months, security teams cannot a
 We formulate downstream exposure prediction as a supervised binary classification task. For a given vulnerability $V$ and downstream release $R$, the model predicts a target label $y \in \{0, 1\}$:
 \begin{equation}
 y = \begin{cases} 
-1, & \text{if } R \text{ is in state } D1 \text{ (Exposed / Unpatched)}, \\
-0, & \text{if } R \text{ is in state } D0, D2, \text{ or } D3 \text{ (Not Exposed / Remediated)}.
+1, & \text{if } R \in \{D1\} \text{ (Exposed)}, \\
+0, & \text{if } R \in \{D0, D2, D3\} \text{ (Not Exposed)}.
 \end{cases}
 \end{equation}
 
@@ -289,13 +288,12 @@ We evaluate four diverse model families representing linear and non-linear decis
 \subsection{Empirical Benchmark Results}
 Table~\ref{tab:benchmarks} summarizes prospective test performance across six standard evaluation metrics: Area Under the Receiver Operating Characteristic Curve (ROC-AUC), Area Under the Precision-Recall Curve (PR-AUC), Macro F1, Exposed Class F1, Balanced Accuracy, and Brier Reliability Score.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \caption{Prospective out-of-time evaluation benchmark results (Trained $\le$2023, Evaluated $\ge$2024; $N_{\text{test}} = 32,862$).}
 \label{tab:benchmarks}
 \small
-\resizebox{\textwidth}{!}{
-\begin{tabular}{lcccccc}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
 \toprule
 \textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{F1-Macro} & \textbf{F1-Exposed} & \textbf{Balanced Acc.} & \textbf{Brier Score} \\
 \midrule
@@ -306,9 +304,8 @@ Table~\ref{tab:benchmarks} summarizes prospective test performance across six st
 \midrule
 \textbf{Stratified Baseline} & 0.5026 & 0.2639 & 0.5023 & 0.2769 & 0.5026 & 0.3957 \\
 \bottomrule
-\end{tabular}
-}
-\end{table}
+\end{tabular*}
+\end{table*}
 
 As shown in Table~\ref{tab:benchmarks} and Figure~\ref{fig:roc_pr}, our pre-remediation models achieve strong predictive efficacy:
 \begin{itemize}
@@ -326,7 +323,7 @@ Having demonstrated strong predictive accuracy, we examine \textbf{RQ3}: Which u
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/fig3_feature_importance.pdf}
+\includegraphics[width=\columnwidth]{figures/fig3_feature_importance.pdf}
 \caption{Top 15 pre-remediation feature importances (normalized Gini importance from gradient-boosted decision trees).}
 \label{fig:importance}
 \end{figure}
