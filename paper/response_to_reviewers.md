@@ -188,6 +188,41 @@ We have added four comprehensive Appendices to the manuscript:
 
 ---
 
+## Responses to Minor Revision Feedback (Final Acceptance)
+
+We thank the Reviewer and Editor for their recommendation of **"Minor Revision $\rightarrow$ Accept"** and for their positive assessment of our methodological rigor, new Leave-One-Release-Out validation, manual taxonomy audit ($\kappa = 0.948$), and day-zero feature attribution. We have addressed all four final minor points as follows:
+
+### Point 1: Attrition Funnel Percentage Consistency
+> *"Change 72.8% to 73.4% ($40,198 / 54,740$ valid release instances) in Section 3.2 and Section 3.4."*
+
+**Response:**  
+We have updated both instances in Section 3.2 and Section 3.4. Section 3.2 now explicitly notes: *"filtering for resolved instances with computable package release timestamps across Debian snapshot archives and Canonical Launchpad registries yields 40,198 ground-truth remediation events (73.4% resolution coverage across the 54,740 valid release instances; 72.8% of all 55,248 total instances)."* Section 3.4 has been updated identically.
+
+### Point 2: RQ3 Narrative Refinement on Feature Hierarchy
+> *"In Section 6.1 (Permutation Importance discussion), explicitly frame ecosystem (`downstream_debian` vs `ubuntu`) and LTS status as macro-level structural drivers, with patch complexity (`loc_added`, `patch_hunks`, `files_changed_count`) and subsystem scrutiny acting as secondary within-distribution modulators."*
+
+**Response:**  
+Section 6.1 has been restructured to explicitly articulate this two-tier hierarchical framework:
+- **Primary Macro-Level Structural Determinants:** Downstream packaging architecture (`downstream_debian` vs. `ubuntu`, +0.2527 AUC drop) and LTS maintenance policy (`is_lts`, +0.0441 AUC drop) establish the fundamental baseline exposure posture for any given operating environment.
+- **Secondary Modulators:** Within a given distribution architecture, upstream advisory scrutiny (`reference_count`, +0.0533 AUC drop), patch complexity (`loc_added`, `patch_hunks`, `files_changed_count`), and subsystem friction (`affected_component_mm`, `bluetooth`) act as discriminative modulators that govern which specific patches maintainers prioritize or defer under triage constraints.
+
+### Point 3: Noble LORO Discussion and Boundary Conditions
+> *"In Section 6.3 (LORO Cross-Validation) and Section 7 (Conclusion), explicitly discuss Ubuntu 24.04 Noble's LORO ROC-AUC (0.5827) as an honest boundary condition for brand-new releases with little historical divergence data, contrasting with mature LTS baselines (Jammy: 0.8667, Focal: 0.7968)."*
+
+**Response:**  
+We have expanded Section 6.3 and Section 7 to provide an honest, transparent analysis of Ubuntu 24.04 Noble (LORO ROC-AUC = 0.5827). We explain that Noble was launched in late April 2024 running Linux 6.8, positioning its codebase in close architectural proximity to upstream mainline at the time of our snapshot. Because nascent releases possess minimal historical branch divergence and have not yet accumulated mature backport backlogs, models evaluated out-of-release face a cold-start setting. In contrast, mature LTS releases transfer with high predictive fidelity (Ubuntu Jammy: 0.8667, Focal: 0.7968, Debian Trixie: 0.7762, Debian Bookworm: 0.7523). We highlight this as a valuable operational boundary condition: models excel on established and mid-lifecycle LTS branches, whereas brand-new releases require distribution-specific calibration as their backporting cadences stabilize.
+
+### Point 4: External Validity Formulated as Hypothesis
+> *"In Section 8.3 (Threats to Validity), soften the claim regarding Linux Mint, Pop!_OS, and cloud images: state that they are hypothesized to experience comparable or compounded delays, but note this as a hypothesis for future empirical verification since their binary packages were not directly evaluated."*
+
+**Response:**  
+Section 8.3 has been revised accordingly: *"While our empirical study focused directly on Debian and Ubuntu, these two distributions form the upstream foundation for widely deployed downstream derivatives, including Linux Mint, Pop!_OS, and major public cloud server images. We hypothesize that these derivative distributions experience comparable or compounded remediation delays due to downstream dependency inheritance and additional packaging cycles; however, we explicitly frame this as an empirical hypothesis for future verification, as their binary packages and repository archives were not directly evaluated in this study."*
+
+### Formatting Polish: Prose Flow
+In accordance with scholarly writing standards, all itemized bullet lists within the main narrative body (operational triage cutoffs in Section 5.3, per-release breakdowns in Section 6.2, and LORO results in Section 6.3) have been converted to flowing academic prose.
+
+---
+
 The revised manuscript and code artifact provide an empirically unassailable foundation ready for publication in *Computers & Security*.
 
 Sincerely,  
