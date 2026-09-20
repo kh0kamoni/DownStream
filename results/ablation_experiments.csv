@@ -1,0 +1,7 @@
+Experiment,Num_Features,XGB_ROC_AUC,XGB_PR_AUC,XGB_Bal_Acc,LR_ROC_AUC,LR_Bal_Acc
+Full Feature Set (53 feats),53,0.808,0.4642,0.7068,0.7994,0.7685
+No Stable Backports (Ablation 1),52,0.8114,0.4946,0.6548,0.81,0.7558
+Upstream-Only (Ablation 2),43,0.6997,0.4084,0.5393,0.704,0.6669
+Patch-Only (Ablation 3),7,0.51,0.2754,0.5005,0.5193,0.5164
+Vulnerability-Only (Ablation 4),35,0.6719,0.3961,0.5342,0.7065,0.6604
+Downstream-Only (Ablation 5),10,0.7514,0.434,0.4603,0.7525,0.7978
