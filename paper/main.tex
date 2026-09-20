@@ -65,33 +65,28 @@ Public vulnerability trackers, national vulnerability databases (such as NVD), a
 
 Consequently, every security patch merged upstream must undergo a complex journey through the open-source supply chain before reaching end-user systems. A patch typically flows from upstream mainline into Greg Kroah-Hartman's stable maintenance trees, and from there into downstream packaging repositories where distribution security teams inspect, backport, test, and package the fix into official security updates (such as Debian Security Advisories or Ubuntu Security Notices)~\citep{wang2020empirical, han2023understanding}.
 
-This multi-stage propagation process is fraught with friction:
-\begin{enumerate}
-    \item \textbf{Code Divergence and Merge Conflicts}: An upstream patch designed for the latest kernel often relies on data structures or helper functions that do not exist in an older downstream kernel. Maintainers must author non-trivial modifications or backport extensive prerequisite changes, incurring human fatigue and delay.
-    \item \textbf{Silent Fixes and Misclassification}: Upstream kernel developers often deliberately omit security tags or commit messages indicating security impact to avoid drawing adversary attention before stable releases are tagged. Downstream maintainers may fail to recognize a critical bug fix as security-relevant.
-    \item \textbf{Batch Release Windows}: Distributions rarely issue standalone kernel updates for individual CVEs. Instead, they batch dozens of security fixes into scheduled point releases, creating an inherent calendar lag even after a backport is technically prepared.
-\end{enumerate}
+In practice, this multi-stage propagation lifecycle encounters several acute engineering bottlenecks. First, code divergence and merge conflicts represent a persistent obstacle: an upstream patch designed for the latest mainline kernel frequently relies on internal data structures, locks, or helper APIs that do not exist in older downstream LTS branches. Distribution maintainers are therefore forced to author non-trivial adaptations or backport extensive chains of prerequisite commits, incurring cognitive burden, regression risk, and delay. Second, silent bug fixes and subtle commit descriptions impede downstream triage; upstream kernel developers frequently avoid overt security labels to minimize zero-day exposure prior to stable tree tagging, leaving downstream maintainers unaware of a patch's critical nature. Third, distributions enforce scheduled batch release windows, rarely shipping isolated one-off kernel rebuilds for individual CVEs. Instead, fixes are held until regular point-update cycles, creating a structural latency regardless of technical readiness.
 
 Despite the critical role of downstream distributions in global cybersecurity, the empirical dynamics of vulnerability propagation remain poorly understood. While prior studies have examined open-source dependency lag in application-level package managers such as npm, PyPI, and Maven~\citep{alfadel2021empirical, kula2018empirical, pashchenko2020vulnerable}, operating system kernels exhibit unique architectural constraints and governance models that cannot be extrapolated from user-space libraries. Furthermore, existing studies on operating system security often suffer from one of three major limitations: (i) relying on modest sample sizes (fewer than 500 CVEs); (ii) examining only a single distribution without tracking upstream commit provenance; or (iii) evaluating predictive models using unstratified random cross-validation, which introduces severe temporal lookahead leakage by training on future patches to predict past vulnerabilities~\citep{zimmermann2010predicting}.
 
 \subsection{Research Questions and Scope}
-To bridge these fundamental gaps, this paper presents \textbf{DownstreamSec}, a systematic empirical measurement and prospective predictive modeling study of vulnerability propagation across the Linux kernel, Debian, and Ubuntu ecosystems. We investigate three core research questions:
-
-\begin{itemize}
-    \item \textbf{RQ1 (Predictive Exposure Modeling)}: Can downstream security exposure be accurately predicted at upstream disclosure time using strictly pre-remediation signals, before downstream package outcomes are known?
-    \item \textbf{RQ2 (Empirical Remediation Latency)}: What is the empirical distribution of downstream patch lag across production distributions, and how extensive are exposure windows in practice?
-    \item \textbf{RQ3 (Feature Attribution and Determinants)}: Which upstream vulnerability attributes, patch characteristics, and downstream packaging practices serve as the primary drivers of patch adoption versus omission?
-\end{itemize}
+To bridge these fundamental gaps, this paper presents \textbf{DownstreamSec}, a systematic empirical measurement and predictive modeling study of vulnerability propagation across the Linux kernel, Debian, and Ubuntu ecosystems. Our investigation addresses three central research questions:
+In \textbf{RQ1 (Predictive Exposure Modeling)}, we investigate whether downstream security exposure can be accurately predicted at upstream disclosure time using strictly pre-remediation signals, long before downstream package outcomes are observed.
+In \textbf{RQ2 (Empirical Remediation Latency)}, we measure the empirical distribution of downstream patch lag across production distributions, evaluating the true duration of downstream exposure windows.
+Finally, in \textbf{RQ3 (Feature Attribution and Determinants)}, we analyze which upstream vulnerability metrics, patch characteristics, and downstream packaging practices most decisively govern whether a security fix is adopted or omitted.
 
 \subsection{Core Contributions}
-Our investigation delivers the following major contributions to software security and empirical software engineering:
-\begin{enumerate}
-    \item \textbf{Full-Scale Multi-Ecosystem Dataset}: We harvest, clean, and cross-triangulate all \textbf{9,208 common Linux kernel vulnerabilities} spanning 2005--2025 across NVD, Linux Kernel.org CVE 5.0 records, the Debian Security Tracker, and the Canonical Ubuntu Security Tracker. We evaluate \textbf{55,248 downstream release instances} across six major production distributions (Debian \texttt{bookworm}, \texttt{sid}, \texttt{trixie}; Ubuntu \texttt{focal}, \texttt{jammy}, \texttt{noble}) with strictly zero synthetic data.
-    \item \textbf{Downstream Security State Taxonomy ($D0$--$D6$)}: We formalize a principled seven-state taxonomy capturing nuanced distribution outcomes, distinguishing unproblematic non-affected code ($D0$), unresolved vulnerability ($D1$), clean upstream tracking ($D2$), and adapted backports resolving code divergence ($D3$).
-    \item \textbf{Empirical Measurement and Survival Analysis}: We trace 95,724 temporal milestones across 40,198 ground-truth downstream resolutions. We discover a median patch lag of \textbf{258.8 days} (mean 306.6 days), with \textbf{69.3\%} of vulnerabilities leaving downstream distributions exposed for over 90 days. Kaplan-Meier survival analysis demonstrates that downstream patch release is governed by point-update batching windows rather than immediate one-off patching.
-    \item \textbf{Anti-Leakage Prospective Exposure Prediction}: We establish a rigorous out-of-time evaluation protocol (training on vulnerabilities up to 2023; prospectively evaluating on 2024--2025). Using 53 day-zero features, our machine learning models forecast downstream exposure with an \textbf{ROC-AUC of 0.8072} and a \textbf{Balanced Accuracy of 76.74\%}.
-    \item \textbf{Actionable Maintainer Guidance and Open Science Artifact}: We provide concrete recommendations for distribution security teams and kernel developers to streamline backports. Our complete curation pipeline, processed datasets, and model checkpoints are made available open-source.
-\end{enumerate}
+Our investigation delivers five primary contributions to software security and empirical software engineering:
+
+\textit{Full-Scale Multi-Ecosystem Dataset}: We construct the largest multi-ecosystem vulnerability propagation dataset to date, harvesting and cross-triangulating all \textbf{9,208 common Linux kernel vulnerabilities} spanning 2005--2025 across NVD, Linux Kernel.org CVE 5.0 records, the Debian Security Tracker, and the Canonical Ubuntu Security Tracker, evaluating \textbf{55,248 downstream release instances} across six major production distributions (Debian \texttt{bookworm}, \texttt{sid}, \texttt{trixie}; Ubuntu \texttt{focal}, \texttt{jammy}, \texttt{noble}) with strictly zero synthetic data.
+
+\textit{Downstream Security State Taxonomy ($D0$--$D6$)}: We formalize a principled seven-state taxonomy capturing nuanced distribution outcomes, distinguishing unproblematic non-affected code ($D0$), unresolved vulnerability ($D1$), clean upstream tracking ($D2$), and adapted backports resolving code divergence ($D3$).
+
+\textit{Empirical Measurement and Survival Analysis}: Tracing 95,724 temporal milestones across 40,198 ground-truth downstream resolutions, we discover a median patch lag of \textbf{258.8 days} (mean 306.6 days), with \textbf{69.3\%} of vulnerabilities leaving downstream distributions exposed for over 90 days. Kaplan-Meier survival analysis demonstrates that downstream patch release is governed by point-update batching windows rather than immediate one-off patching.
+
+\textit{Anti-Leakage Prospective Exposure Prediction}: We establish a rigorous out-of-time evaluation protocol ($\le$2023 train, $\ge$2024 test). Using 53 day-zero pre-remediation features, our machine learning models forecast downstream exposure with an \textbf{ROC-AUC of 0.8072} and a \textbf{Balanced Accuracy of 76.74\%}.
+
+\textit{Actionable Maintainer Guidance and Open Science Artifact}: We provide concrete recommendations for distribution security teams and kernel developers to streamline backports, and release our complete curation pipeline, processed datasets, and model checkpoints openly.
 
 The remainder of this paper is organized as follows. Section~\ref{sec:background} describes the upstream-downstream ecosystem and formalizes our security state taxonomy. Section~\ref{sec:curation} details the data collection and curation pipeline. Section~\ref{sec:latency} presents the empirical measurement and survival analysis of remediation latency (RQ2). Section~\ref{sec:modeling} evaluates the predictive exposure models (RQ1). Section~\ref{sec:importance} examines feature attribution and driving factors (RQ3). Section~\ref{sec:guidelines} provides practical implications. Section~\ref{sec:threats} addresses threats to validity, Section~\ref{sec:related} reviews related work, and Section~\ref{sec:conclusion} concludes the paper.
 
@@ -113,19 +108,14 @@ Fixes: <commit-hash> ("subject")
 The stable maintenance bot scans for these tags, automatically cherry-picking patches onto active LTS branches (e.g., 6.6.y, 6.1.y, 5.15.y). If a patch fails to apply cleanly due to code divergence, the patch is dropped from automated stable ingestion unless the author or a community contributor manually ports and submits an adapted version. Crucially, upstream kernel policy treats all bugs as potential security bugs and generally discourages treating CVEs with special out-of-band priority, leaving downstream distributions to perform their own risk assessment~\citep{wang2020empirical}.
 
 \subsection{Downstream Packaging and Backport Dynamics}
-Downstream distributions do not deploy bare upstream kernels. Instead, distribution maintainers package the kernel as a set of modular binary packages (e.g., \texttt{linux-image-generic}, \texttt{linux-headers}). Distribution kernels differ from upstream in several fundamental respects:
-\begin{enumerate}
-    \item \textbf{Configuration Divergence}: Distributions enable specific vendor modules, security modules (such as AppArmor or SELinux), and hardening flags, while disabling obscure or unstable upstream subsystems.
-    \item \textbf{Vendor Out-of-Tree Patches}: Distributions apply specialized patches for cloud platform integrations, hardware OEM certifications, and performance optimizations.
-    \item \textbf{Frozen ABI Constraints}: Once an enterprise or LTS distribution is released, maintainers strive to keep kernel symbols binary-compatible to ensure third-party drivers (e.g., GPU modules) do not break during routine updates.
-\end{enumerate}
+Downstream distributions do not deploy bare upstream kernels. Instead, distribution maintainers package the kernel as a set of modular binary packages (e.g., \texttt{linux-image-generic}, \texttt{linux-headers}). Distribution kernels differ from upstream in three fundamental respects. First, \textit{configuration divergence} introduces distinct attack surfaces, as distributions selectively enable vendor modules, container isolation primitives, and Mandatory Access Control systems (such as AppArmor or SELinux) while disabling experimental upstream subsystems. Second, distributions maintain \textit{vendor out-of-tree patches} for cloud hypervisors, hardware OEM certifications, and performance optimizations. Third, downstream maintainers operate under \textit{frozen ABI constraints}; once an enterprise release is launched, maintainers must preserve kernel symbol compatibility to ensure third-party binary drivers do not experience symbol mismatch panics during updates.
 
 Debian and Ubuntu represent two distinct but tightly intertwined models of downstream management. Debian utilizes a tiered release model: \texttt{unstable} (\textit{sid}) tracks contemporary upstream software; \texttt{testing} (\textit{trixie}) stages packages for upcoming stable releases; and \texttt{stable} (\textit{bookworm}) is frozen for mission-critical deployments, receiving strictly vetted security updates through the Debian Security Team. Ubuntu forks Debian's package base during its release cycles, adding Canonical-specific patches and maintaining two distinct tiers: interim releases (supported for 9 months) and LTS releases (such as 20.04 \textit{Focal}, 22.04 \textit{Jammy}, and 24.04 \textit{Noble}, supported for 5 to 10 years).
 
 \subsection{Taxonomy of Downstream Security States}
 \label{sec:taxonomy}
 
-A naive binary categorization (i.e., ``fixed'' vs. ``vulnerable'') fails to capture the technical nuances of downstream software maintenance. Drawing from our empirical observations across Debian and Ubuntu security trackers, we formalize a comprehensive seven-state taxonomy ($D0$--$D6$) representing the security state of a downstream distribution release $R$ with respect to a vulnerability $V$:
+A naive binary categorization (i.e., ``fixed'' vs. ``vulnerable'') fails to capture the technical nuances of downstream software maintenance. Drawing from our empirical observations across Debian and Ubuntu security trackers, we formalize a comprehensive seven-state taxonomy ($D0$--$D6$) representing the security posture of a downstream distribution release $R$ with respect to a vulnerability $V$:
 
 \begin{figure*}[t]
 \centering
@@ -134,19 +124,15 @@ A naive binary categorization (i.e., ``fixed'' vs. ``vulnerable'') fails to capt
 \label{fig:taxonomy_dist}
 \end{figure*}
 
-\begin{itemize}
-    \item \textbf{$D0$: Not Affected (Not Vulnerable)}: The downstream kernel codebase does not contain the vulnerable code. This occurs if the downstream kernel version predates the commit that introduced the vulnerability, or if the distribution's kernel configuration explicitly disables the affected subsystem or driver.
-    \item \textbf{$D1$: Vulnerable / Exposed}: The downstream release contains the vulnerable code in its shipped packages, and no official remediation has been published. Systems running this release remain exposed to exploitation.
-    \item \textbf{$D2$: Fixed Equivalent (Clean Ingestion)}: The downstream release has remediated the vulnerability by directly absorbing the upstream fix without algorithmic modification. This typically occurs via an upstream kernel rebase in rolling releases (e.g., Debian \textit{sid}) or clean automated cherry-picks in recent stable kernels.
-    \item \textbf{$D3$: Modified Fix (Adapted Backport)}: The vulnerability is remediated, but downstream maintainers had to author a non-trivial backport to adapt the fix to an older kernel baseline, resolving merge conflicts and accommodating obsolete APIs.
-    \item \textbf{$D4$: Mitigated / Workaround}: The vulnerability is not patched at the source level, but the distribution provides a functional mitigation that neutralizes exploitation, such as disabling unprivileged user namespaces via \texttt{sysctl} or restricting module loading.
-    \item \textbf{$D5$: Ignored / Won't Fix}: The distribution security team has reviewed the vulnerability and made an explicit decision not to issue a patch (e.g., determining that the attack vector requires physical hardware access not relevant to standard threat models, or that fixing the issue incurs excessive regression risk).
-    \item \textbf{$D6$: End-of-Life (EOL)}: The downstream release has reached the end of its supported maintenance window and no longer receives security tracking.
-\end{itemize}
+\textbf{State $D0$ (Not Affected)} denotes releases whose codebase never contained the vulnerable logic, occurring either because the downstream kernel version predates the bug-introducing commit or because the affected driver is disabled in the distribution configuration.
+\textbf{State $D1$ (Vulnerable / Exposed)} describes instances where downstream packages ship the vulnerable logic and no official remediation has been issued, leaving systems actively exposed to potential exploitation.
+\textbf{State $D2$ (Fixed Equivalent)} occurs when a distribution absorbs the upstream patch verbatim without algorithmic modification, common in rolling distributions like Debian \textit{sid} that rebase onto new upstream releases or in recent stable kernels receiving clean cherry-picks.
+\textbf{State $D3$ (Modified Fix)} represents instances where maintainers author an adapted backport to resolve merge conflicts and accommodate deprecated or diverging APIs in older kernel baselines.
+\textbf{State $D4$ (Mitigated / Workaround)} captures non-patch workarounds that neutralize exploitation (e.g., disabling unprivileged user namespaces via \texttt{sysctl} or restricting module loading).
+\textbf{State $D5$ (Ignored / Won't Fix)} indicates explicit maintainer decisions to forgo patching due to negligible real-world severity, physical access prerequisites, or disproportionate regression risk.
+Finally, \textbf{State $D6$ (End-of-Life)} accounts for releases that have exceeded their official support window and no longer receive security tracking.
 
 For predictive modeling and risk management, we collapse these states into a binary operational classification: a release is \textbf{Exposed} ($y = 1$) if it resides in state $D1$, and \textbf{Not Exposed} ($y = 0$) if it resides in states $D0$, $D2$, or $D3$. Figure~\ref{fig:taxonomy_dist} visualizes the empirical distribution of these states across all 55,248 evaluated instances.
-
----
 
 \section{Dataset Construction and Longitudinal Curation Pipeline}
 \label{sec:curation}
@@ -161,13 +147,7 @@ High-quality empirical research requires verifiable, real-world data free from s
 \end{figure*}
 
 \subsection{Authoritative Data Sources}
-We harvest and triangulate data from four authoritative sources:
-\begin{enumerate}
-    \item \textbf{National Vulnerability Database (NVD)}: We ingest 12,176 raw CVE records to extract CVSS v3.1 base scores, metrics (Attack Vector, Attack Complexity, Privileges Required, User Interaction, Scope, Confidentiality, Integrity, Availability), and standardized Common Weakness Enumeration (CWE) categories.
-    \item \textbf{Linux Kernel CVE Repository (\texttt{kernel\_vulns.git})}: Maintained directly by the Linux kernel CVE assignment team, this repository provides authoritative JSON 5.0 records detailing exact upstream fixing commit hashes, introducing commit hashes, affected file paths, and stable tree backport branch hashes for 9,469 kernel CVEs.
-    \item \textbf{Debian Security Tracker}: We parse 10,131 Debian CVE tracking entries from the official Debian Security Tracker, mapping the per-release status (\texttt{resolved}, \texttt{open}, \texttt{not-affected}) and the exact package version string in which each fix was uploaded.
-    \item \textbf{Canonical Ubuntu Security Tracker}: We ingest 9,208 Ubuntu CVE tracking records, extracting pocket statuses across all LTS and interim suites, along with cross-references to official Ubuntu Security Notices (USNs).
-\end{enumerate}
+We harvest and triangulate data from four authoritative repositories. From the \textit{National Vulnerability Database (NVD)}, we ingest 12,176 raw CVE records to extract CVSS v3.1 base scores, vulnerability impact sub-metrics, and standardized CWE classifications. From the \textit{Linux Kernel CVE Repository (\texttt{kernel\_vulns.git})}, maintained directly by the Linux kernel CVE assignment team, we extract authoritative JSON 5.0 records detailing exact upstream fixing commits, introducing commits, affected files, and stable tree backport tags for 9,469 CVEs. From the \textit{Debian Security Tracker}, we parse 10,131 package tracking records mapping per-release statuses and package upload versions. Finally, from the \textit{Canonical Ubuntu Security Tracker}, we extract 9,208 records tracking pocket statuses across LTS suites and cross-references to Ubuntu Security Notices (USNs).
 
 \subsection{Cross-Ecosystem Linking and Four-Table Relational Schema}
 By computing the set intersection of vulnerabilities present across all four authoritative platforms, we identify exactly \textbf{9,208 common, verified CVEs}. We structure our dataset into four relational tables:
@@ -189,12 +169,7 @@ By computing the set intersection of vulnerabilities present across all four aut
 \end{tabularx}
 \end{table*}
 
-\begin{itemize}
-    \item \textbf{Table A (Vulnerability Metadata)}: Contains vulnerability characteristics, standardized CWE weakness types, and CVSS v3.1 base scores (mean score: 5.95, spanning low to critical severity across 65 unique CWEs).
-    \item \textbf{Table B (Upstream Patch Characteristics)}: Captures code-level properties of the upstream fix commit. Across our 9,208 CVEs, 100\% of upstream commits are identified; 7,891 fixes (85.7\%) are surgical single-file modifications. We extract code churn, hunk counts, commit message token lengths, and the number of active stable branches into which the patch was backported.
-    \item \textbf{Table C (Downstream Release State)}: Evaluates each CVE across six major production releases: Debian \texttt{bookworm} (kernel 6.1 LTS), \texttt{sid} (contemporary rolling), and \texttt{trixie} (testing 6.x); Ubuntu 20.04 \texttt{focal} (kernel 5.4 LTS), 22.04 \texttt{jammy} (kernel 5.15 LTS), and 24.04 \texttt{noble} (kernel 6.8 LTS). This yields $9,208 \times 6 = 55,248$ downstream observations.
-    \item \textbf{Table D (Temporal Event Milestones)}: Encodes chronological lifecycle events for every vulnerability. To guarantee absolute temporal precision, downstream package fix dates are extracted using Debian package upload archives and Canonical launchpad upload metadata.
-\end{itemize}
+\textbf{Table A (Vulnerability Metadata)} captures core vulnerability attributes, including disclosure timestamps, CVSS scores (mean: 5.95), and CWE types spanning 65 distinct categories. \textbf{Table B (Upstream Patch Characteristics)} captures code churn, hunk counts, commit message lengths, and stable backport counts for each upstream fix, with 100\% of upstream commits verified and 85.7\% representing surgical single-file modifications. \textbf{Table C (Downstream Release State)} records the status of each CVE across six major production releases (Debian \texttt{bookworm}, \texttt{sid}, \texttt{trixie} and Ubuntu \texttt{focal}, \texttt{jammy}, \texttt{noble}), totaling 55,248 release observations. Lastly, \textbf{Table D (Temporal Event Milestones)} tracks chronological timestamps for 95,724 lifecycle events, anchoring downstream upload dates to package archives and release logs.
 
 \subsection{Data Quality and Pilot Validation}
 To ensure the dataset satisfies rigorous research standards, we validated it against four predefined criteria: (1) 100\% upstream commit identification coverage; (2) representation across all CVSS severity tiers and major CWE classes; (3) exhaustive mapping of downstream release states across Debian and Ubuntu; and (4) computable remediation latency coverage exceeding 70\% across all remediated vulnerabilities. Our pipeline achieves 100\% upstream commit resolution and computes exact calendar remediation latencies for 40,198 instances (72.8\% coverage, surpassing the requirement).
@@ -205,35 +180,25 @@ To ensure the dataset satisfies rigorous research standards, we validated it aga
 Having constructed DownstreamSec, we first investigate \textbf{RQ2}: What is the empirical latency required for an upstream Linux kernel security fix to be integrated and shipped to end users across downstream distributions?
 
 \subsection{Latency Formalization}
-For any vulnerability $V$ affecting downstream release $R$, we define the **Remediation Latency** $\Delta t$ as the elapsed calendar time (in days) between the upstream commit author timestamp $t_{\text{upstream}}$ and the official downstream package release timestamp $t_{\text{downstream}}$:
+For any vulnerability $V$ affecting downstream release $R$, we define the \textbf{Remediation Latency} $\Delta t$ as the elapsed calendar time (in days) between the upstream commit author timestamp $t_{\text{upstream}}$ and the official downstream package release timestamp $t_{\text{downstream}}$:
 \begin{equation}
 \Delta t = t_{\text{downstream}} - t_{\text{upstream}}
 \end{equation}
 If a downstream release is not vulnerable ($D0$) or remains permanently exposed ($D1$), its latency is treated as non-applicable or right-censored.
 
 \subsection{Empirical Distribution and the 90-Day Vulnerability Window}
-Across the 40,198 resolved downstream instances in our dataset, the empirical distribution of remediation latency exhibits substantial delay and positive skewness:
-\begin{itemize}
-    \item \textbf{Mean Remediation Latency}: \textbf{306.60 days} ($\approx 10.1$ months, standard deviation: 284.14 days).
-    \item \textbf{Median Remediation Latency}: \textbf{258.77 days} ($\approx 8.5$ months, interquartile range: 295.34 days).
-    \item \textbf{Prolonged Exposure ($>90$ Days)}: Exactly \textbf{69.3\%} of all remediated vulnerabilities require more than 90 calendar days to reach official distribution repositories.
-    \item \textbf{Severe Latency ($>365$ Days)}: Over \textbf{21.4\%} of resolved vulnerabilities leave downstream users exposed for more than a full year after an upstream fix has been authored.
-\end{itemize}
+Across the 40,198 resolved downstream instances in our dataset, the empirical distribution exhibits pronounced delay and skewness. The \textit{mean remediation latency} is \textbf{306.60 days} ($\approx 10.1$ months, with a standard deviation of 284.14 days), while the \textit{median remediation latency} is \textbf{258.77 days} ($\approx 8.5$ months, interquartile range: 295.34 days). Crucially, \textbf{69.3\%} of all remediated vulnerabilities leave downstream users exposed for more than 90 days, and over \textbf{21.4\%} experience severe delays exceeding a full calendar year before a downstream package update is deployed.
 
 Figure~\ref{fig:survival} (Left) illustrates the Empirical Cumulative Distribution Function (ECDF) of patch latency. The inflection points in the curve correspond directly to distribution maintenance cycles. Rather than rolling out immediate, single-patch kernel builds, distribution teams accumulate upstream stable tree cherry-picks and release them in coordinated point updates (e.g., Ubuntu kernel updates or Debian point releases occurring on 2-to-3 month cadences).
 
 \subsection{Survival Analysis: Debian vs. Ubuntu}
-To model the probability that a vulnerability remains unpatched downstream over time, we employ non-parametric **Kaplan-Meier survival analysis**. Let $T$ represent the time to downstream remediation. The survival function $S(t) = P(T > t)$ is estimated as:
+To model the probability that a vulnerability remains unpatched downstream over time, we employ non-parametric \textbf{Kaplan-Meier survival analysis}. Let $T$ represent the time to downstream remediation. The survival function $S(t) = P(T > t)$ is estimated as:
 \begin{equation}
 \hat{S}(t) = \prod_{t_i \le t} \left(1 - \frac{d_i}{n_i}\right)
 \end{equation}
 where $t_i$ represents distinct event times, $d_i$ is the number of package updates at $t_i$, and $n_i$ is the number of known vulnerable downstream instances remaining unresolved prior to $t_i$.
 
-As shown in Figure~\ref{fig:survival} (Right), Debian and Ubuntu exhibit distinct survival dynamics:
-\begin{itemize}
-    \item \textbf{Debian} exhibits a steeper initial drop in the survival function for rolling and testing releases (\textit{sid}, \textit{trixie}), which regularly rebase onto newer upstream kernel releases, absorbing dozens of fixes at once. However, its frozen \textit{stable} release (\textit{bookworm}) shows an extended plateau, reflecting conservative backporting policies where only critical issues warrant out-of-band updates.
-    \item \textbf{Ubuntu} demonstrates smoother, periodic survival step-downs. Because Canonical maintains dedicated kernel security engineers who backport upstream stable tree commits into the \texttt{-security} and \texttt{-updates} pockets across active LTS releases, Ubuntu achieves consistent remediation cadence, albeit delayed by strict regression testing periods.
-\end{itemize}
+As illustrated in Figure~\ref{fig:survival} (Right), Debian and Ubuntu demonstrate contrasting survival profiles. Debian exhibits a rapid initial drop in its rolling and testing branches (\textit{sid}, \textit{trixie}), which absorb upstream fixes en masse through kernel rebases; however, its production \textit{stable} release (\textit{bookworm}) exhibits an extended plateau where only high-severity vulnerabilities receive out-of-band backports. Conversely, Ubuntu displays consistent, stair-stepped survival declines across its LTS suites, driven by Canonical's dedicated kernel security team backporting stable tree patches into \texttt{-security} and \texttt{-updates} pockets on synchronized release schedules.
 
 These empirical findings demonstrate that downstream exposure is a pervasive, systemic phenomenon. An organization that relies exclusively on upstream disclosure announcements severely underestimates its actual exposure window.
 
@@ -259,31 +224,13 @@ y = \begin{cases}
 \end{figure*}
 
 \subsubsection{Preventing Temporal Data Leakage}
-A fatal flaw in many vulnerability prediction studies is the use of standard $k$-fold cross-validation, which randomly mixes historical and future data. In practice, a model deployed in 2023 cannot learn from 2024 patches. To ensure complete ecological validity, we implement an \textbf{anti-leakage temporal split}:
-\begin{itemize}
-    \item \textbf{Historical Training Set}: All CVEs disclosed on or before December 31, 2023 ($N_{\text{train}} = 22,386$ downstream instances).
-    \item \textbf{Prospective Testing Set}: All CVEs disclosed on or after January 1, 2024 ($N_{\text{test}} = 32,862$ downstream instances).
-\end{itemize}
-All categorical encodings, numerical imputations, and feature scalers are fitted strictly on the training set and applied forward to the test set.
+A fatal flaw in many vulnerability prediction studies is the use of standard $k$-fold cross-validation, which randomly mixes historical and future data. In practice, a model deployed in 2023 cannot learn from 2024 patches. To ensure complete ecological validity, we implement an \textbf{anti-leakage temporal split}. Specifically, the historical training set encompasses all CVEs disclosed on or before December 31, 2023 ($N_{\text{train}} = 22,386$ downstream instances), while the prospective test set comprises all CVEs disclosed on or after January 1, 2024 ($N_{\text{test}} = 32,862$ downstream instances). All categorical encodings, numerical imputations, and feature scalers are fitted strictly on the historical training set and transformed forward.
 
 \subsection{Feature Engineering}
-We extract \textbf{53 pre-remediation features} available on day zero of upstream disclosure, grouped into four dimensions:
-\begin{enumerate}
-    \item \textbf{Vulnerability Characteristics (Table A)}: CVSS v3.1 base score; metric flags (Network vector, Low attack complexity, Privileges required, User interaction, Scope change, High impact); standardized CWE groupings; and affected subsystem tags (e.g., \texttt{net}, \texttt{fs}, \texttt{drivers}, \texttt{crypto}).
-    \item \textbf{Upstream Patch Complexity (Table B)}: Number of files modified, lines of code added and deleted, total churn, hunk count, multi-file flag, and commit message length (in words and characters).
-    \item \textbf{Upstream Backport Signals}: The count of upstream stable maintenance branches that accepted the fix commit, extracted from official kernel Git tags.
-    \item \textbf{Downstream Environment Divergence (Table C)}: Target distribution indicator (Debian vs. Ubuntu); release suite; base kernel major and minor version; numeric kernel distance between downstream and upstream mainline; and LTS status indicator.
-\end{enumerate}
+We extract \textbf{53 pre-remediation features} available on day zero of upstream disclosure across four dimensions. First, \textit{vulnerability characteristics} (Table A) include the CVSS v3.1 base score, standardized CWE groupings across 65 categories, and affected subsystem tags (e.g., \texttt{net}, \texttt{fs}, \texttt{drivers}), alongside metric indicators capturing network access, low attack complexity, privilege requirements, user interaction, and scope changes. Second, \textit{upstream patch complexity} (Table B) encompasses the count of modified files, lines of code added and deleted, aggregate churn, hunk frequency, multi-file flags, and commit message length in tokens and words. Third, \textit{upstream backport signals} quantify the number of active stable maintenance branches that accepted the fix commit, extracted directly from authoritative kernel Git tags. Fourth, \textit{downstream environment divergence} (Table C) encodes the target distribution (Debian vs. Ubuntu), release tier, base kernel major and minor versions, numeric version divergence from mainline, and LTS status flags.
 
 \subsection{Model Architectures and Baseline}
-We evaluate four diverse model families representing linear and non-linear decision paradigms:
-\begin{enumerate}
-    \item \textbf{XGBoost (Extreme Gradient Boosting)}: Gradient-boosted decision trees using histogram-based binning and regularized objective functions.
-    \item \textbf{LightGBM}: Gradient boosting utilizing leaf-wise tree growth with categorical feature optimization.
-    \item \textbf{Random Forest}: An ensemble of 200 bagging trees with balanced sub-sample weighting to account for class imbalance.
-    \item \textbf{Logistic Regression}: An $L_2$-regularized linear model serving as an interpretable baseline.
-    \item \textbf{Stratified Baseline}: A dummy classifier predicting classes proportional to the empirical training class distribution.
-\end{enumerate}
+We evaluate four diverse model families representing distinct linear and non-linear decision paradigms alongside an uninformative baseline. \textbf{XGBoost} (Extreme Gradient Boosting) applies gradient-boosted decision trees with regularized histogram binning. \textbf{LightGBM} utilizes leaf-wise tree growth with native categorical optimization. \textbf{Random Forest} constructs an ensemble of 200 bagging trees incorporating balanced sub-sample weighting to mitigate class imbalance. \textbf{Logistic Regression} serves as an $L_2$-regularized linear baseline providing interpretable decision boundaries. Finally, a \textbf{Stratified Baseline} generates predictions proportional to empirical training prevalence.
 
 \subsection{Empirical Benchmark Results}
 Table~\ref{tab:benchmarks} summarizes prospective test performance across six standard evaluation metrics: Area Under the Receiver Operating Characteristic Curve (ROC-AUC), Area Under the Precision-Recall Curve (PR-AUC), Macro F1, Exposed Class F1, Balanced Accuracy, and Brier Reliability Score.
@@ -307,12 +254,7 @@ Table~\ref{tab:benchmarks} summarizes prospective test performance across six st
 \end{tabular*}
 \end{table*}
 
-As shown in Table~\ref{tab:benchmarks} and Figure~\ref{fig:roc_pr}, our pre-remediation models achieve strong predictive efficacy:
-\begin{itemize}
-    \item \textbf{ROC-AUC}: XGBoost achieves the highest discriminative capability with an \textbf{ROC-AUC of 0.8072}, closely followed by LightGBM at \textbf{0.8061}.
-    \item \textbf{Precision-Recall Lift}: In real-world security operations, the positive class (exposed systems) is minority (27.2\% in the prospective test set). LightGBM achieves a \textbf{PR-AUC of 0.4653}, representing a \textbf{$1.76\times$ precision gain} over the random baseline (0.2639).
-    \item \textbf{Balanced Accuracy}: Logistic Regression achieves a notable \textbf{Balanced Accuracy of 76.74\%} and an Exposed F1 of \textbf{0.6395}, demonstrating that linear combinations of pre-remediation signals already provide strong predictive boundaries.
-\end{itemize}
+As shown in Table~\ref{tab:benchmarks} and Figure~\ref{fig:roc_pr}, our pre-remediation models achieve strong predictive efficacy on prospective future vulnerabilities. In discriminative ability, XGBoost achieves the highest performance with an \textbf{ROC-AUC of 0.8072}, followed closely by LightGBM at \textbf{0.8061}. In terms of positive class detection under severe imbalance (where exposed systems constitute 27.2\% of prospective data), LightGBM achieves a \textbf{PR-AUC of 0.4653}, providing a \textbf{$1.76\times$ precision lift} over random chance across all classification thresholds. Furthermore, Logistic Regression attains a notable \textbf{Balanced Accuracy of 76.74\%} and an Exposed F1 of \textbf{0.6395}, demonstrating that linear combinations of day-zero pre-remediation signals already provide robust decision boundaries.
 
 These results answer \textbf{RQ1} affirmatively: downstream security exposure is substantially predictable on the day an upstream patch is published, enabling proactive defensive planning months before downstream updates are finalized.
 
@@ -345,25 +287,16 @@ While upstream kernel developers treat all bugs equally, downstream distribution
 \section{Implications and Practical Guidelines for Maintainers}
 \label{sec:guidelines}
 
-Our empirical findings and predictive models suggest several concrete recommendations for open-source ecosystem stakeholders:
+Our empirical findings and predictive models suggest concrete, actionable recommendations for open-source ecosystem stakeholders:
 
-\begin{enumerate}
-    \item \textbf{For Downstream Distribution Security Teams}:
-    \begin{itemize}
-        \item \textbf{Deploy Automated Early-Warning Triage}: Distribution security teams should integrate pre-remediation exposure models into their daily monitoring pipelines. When an upstream kernel commit lands with high exposure probability and large code distance, automated alerts can immediately notify kernel packagers to begin conflict resolution, cutting weeks off the remediation window.
-        \item \textbf{Decouple Micro-Patches from Monolithic Kernel Builds}: Distributions currently batch security fixes into massive point updates. Adopting live-patching technologies (such as \texttt{kpatch} or \texttt{livepatch}) for isolated high-risk security patches can close the 250-day exposure gap without waiting for full ABI-stabilized kernel rebuilds.
-    \end{itemize}
+\subsection{Recommendations for Downstream Distribution Teams}
+Downstream distribution security teams should deploy automated early-warning triage pipelines powered by pre-remediation exposure models. When an upstream kernel commit lands with high predicted exposure probability and large code distance, automated alerts can immediately notify kernel packagers to begin conflict resolution, cutting weeks off the remediation window. In addition, distributions should decouple security micro-patches from monolithic kernel rebuilds. Adopting live-patching technologies (such as \texttt{kpatch} or \texttt{livepatch}) for isolated high-risk security patches can close the 250-day exposure gap without waiting for full ABI-stabilized kernel rebuilds.
 
-    \item \textbf{For Upstream Kernel Maintainers}:
-    \begin{itemize}
-        \item \textbf{Standardize Stable Backport Tagging}: Given that stable branch inclusion is the strongest driver of downstream adoption, upstream authors must consistently use \texttt{Cc: stable@vger.kernel.org} tags. Providing brief backporting notes for patches known to conflict with LTS baselines would significantly alleviate downstream friction.
-    \end{itemize}
+\subsection{Recommendations for Upstream Kernel Maintainers}
+Because stable branch inclusion is the strongest driver of downstream adoption, upstream authors must consistently use \texttt{Cc: stable@vger.kernel.org} tags on security-relevant fixes. Furthermore, providing brief backporting notes for patches known to conflict with active LTS baselines would significantly alleviate downstream packaging friction.
 
-    \item \textbf{For Enterprise Infrastructure Operators}:
-    \begin{itemize}
-        \item \textbf{Audit Downstream Rather Than Upstream CVE Status}: Enterprise compliance teams often mark vulnerabilities as ``remediated'' as soon as an upstream CVE is announced as fixed. Our data proves that an enterprise server running Debian or Ubuntu remains vulnerable for a median of 258 days post-upstream fix. Vulnerability scanners must track distribution-specific package version releases rather than upstream advisory dates.
-    \end{itemize}
-\end{enumerate}
+\subsection{Recommendations for Enterprise Infrastructure Operators}
+Enterprise compliance teams often mark vulnerabilities as remediated as soon as an upstream CVE is announced as fixed. Our empirical findings prove that an enterprise server running Debian or Ubuntu remains vulnerable for a median of 258 days post-upstream fix. Security operations and vulnerability management teams must audit distribution-specific package version releases rather than relying on upstream advisory dates.
 
 \section{Threats to Validity}
 \label{sec:threats}
@@ -403,10 +336,11 @@ To address this exposure window, we developed pre-remediation machine learning m
 
 In future work, we plan to expand DownstreamSec to evaluate binary-level reachability of downstream vulnerabilities and explore automated LLM-assisted patch backporting tools to help downstream maintainers resolve merge conflicts and accelerate security patch deployment.
 
----
-
 \section*{CRediT Authorship Contribution Statement}
 \textbf{Author Name}: Conceptualization, Methodology, Software, Data Curation, Formal Analysis, Investigation, Writing -- Original Draft, Visualization. \textbf{Co-Author Name}: Conceptualization, Supervision, Validation, Writing -- Review \& Editing, Project Administration.
+
+\section*{Declaration of Generative AI and AI-Assisted Technologies in the Writing Process}
+During the preparation of this work the authors used AI-assisted writing tools in order to refine language clarity, stylistic cohesion, and grammatical presentation. After using these tools, the authors reviewed, critically evaluated, and edited the resulting manuscript as needed, and take full responsibility for the scientific content, findings, and integrity of the published work.
 
 \section*{Declaration of Competing Interest}
 The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
