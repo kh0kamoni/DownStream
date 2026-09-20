@@ -1,4 +1,4 @@
-# Formal Response to Reviewers and Editorial Board (Revision Round 2)
+# Formal Response to Reviewers and Editorial Board (Revision Round 3 / Major Revision)
 **Manuscript Title:** DownstreamSec: Dissecting and Predicting Vulnerability Propagation and Security Exposure Across Upstream and Downstream Operating System Ecosystems  
 **Target Journal:** Elsevier *Computers & Security* (COSE)  
 **Authors:** Khoka Moni et al.  
@@ -7,21 +7,21 @@
 
 ### Dear Editor and Reviewers,
 
-We express our profound appreciation to the Associate Editor and Reviewers for their exceptionally sharp, rigorous, and constructive second-round review. The reviewers identified critical methodological nuances that have allowed us to transform this manuscript into a gold-standard empirical and predictive study.
+We express our profound appreciation to the Associate Editor and Reviewers for their exceptionally sharp, rigorous, and constructive third-round review. The reviewers identified critical methodological nuances that have allowed us to transform this manuscript into a gold-standard empirical and predictive study.
 
 In this revision, we have resolved every concern raised by the review team:
 
 1. **Strict Day-Zero Primary Model (No Post-Disclosure Signals):** We made the **Clean Day-Zero Model (52 features, zero stable backports)** the **Primary Benchmark** of the entire paper (reported in Table 2, Abstract, and Section 5). In out-of-time prospective evaluation ($N_{\text{test}} = 32,536$), XGBoost achieves an **ROC-AUC of 0.8114** [95% CI: 0.8066, 0.8159] and **PR-AUC of 0.4793** [95% CI: 0.4699, 0.4896], while regularized Logistic Regression achieves an **ROC-AUC of 0.8127** [95% CI: 0.8077, 0.8173] and a **Balanced Accuracy of 75.48%** [95% CI: 74.91%, 76.03%].
-2. **The "Ablation Paradox" & Retrospective Reframing:** In Section 6, we completely reframed `stable_backport_count` as a **retrospective supply-chain propagation correlate** rather than a day-zero predictor. We explain why historical Gini importance ranks it highly on training data, but why omitting it eliminates temporal lookahead noise and improves out-of-time prospective generalization from 0.8080 to 0.8114 ROC-AUC.
-3. **Target Construction, Empirical State Frequencies, & Fixed Time Horizon:** We explicitly documented the empirical breakdown of the D0–D6 taxonomy in the Linux kernel: $D3$ (53.7%), $D1$ (27.2%), $D2$ (18.7%), $D0$ (0.4%), and explained why $D4$, $D5$, and $D6$ represent 0.0% in active maintained kernel packages (distributions never mark core kernel CVEs as "Won't Fix" or "EOL"). We formulated the binary target as **Protracted Downstream Exposure ($\ge 90$ days)**. Because our snapshot was taken in 2026, all prospective test CVEs from 2024–2025 have had 14 to 26 months of observation history, confirming that $D1$ instances reflect genuine protracted exposure rather than recent censoring.
-4. **Release-Time Validity & Eliminating Anachronisms:** We instituted a strict **Release-Time Validity Protocol**: every CVE-release observation is restricted to releases that actively existed at vulnerability disclosure. We pruned 508 pre-release observations of Ubuntu Noble (released April 25, 2024) for CVEs disclosed in early 2024, eliminating any potential release anachronism.
-5. **Reconciled Benchmark Numbers with 95% Bootstrap CIs:** All benchmark numbers across the Abstract, Table 2, Table 3, and Section 5 are completely synchronized and accompanied by 95% bootstrap confidence intervals ($B = 1,000$).
-6. **Data Intersection & Attrition Funnel:** We clarified why the 4-way intersection equals 9,208 CVEs: Canonical curates a strict, deduplicated registry specifically for kernel CVEs (9,210 records). Exactly 9,208 out of the 9,210 Ubuntu records (99.98%) intersect across NVD (12,176), Linux Kernel.org CVE JSON 5.0 (9,469), and Debian (10,131) with complete upstream git commit hashes.
-7. **Survival Analysis Estimands:** We clearly delineated the three distinct estimands:
+2. **Feature Provenance & Temporal Availability Audit (Table 4):** We added an explicit temporal provenance audit table (Table 4) detailing the exact source timestamp and availability of all 52 pre-remediation features ($t \le t_{\text{upstream\_commit}}$ or $t \le t_{\text{disclosure}}$), demonstrating that zero lookahead signals are leaked.
+3. **The "Ablation Paradox" & Retrospective Reframing:** In Section 6, we completely reframed `stable_backport_count` as a **retrospective supply-chain propagation correlate** rather than a day-zero predictor. We explain why historical Gini importance ranks it highly on training data, but why omitting it eliminates temporal lookahead noise and improves out-of-time prospective generalization from 0.8080 to 0.8114 ROC-AUC.
+4. **Target Construction, Empirical State Frequencies, & Fixed Time Horizon:** We explicitly documented the empirical breakdown of the D0–D6 taxonomy in the Linux kernel: $D3$ (53.7%), $D1$ (27.2%), $D2$ (18.7%), $D0$ (0.4%), and explained why $D4$, $D5$, and $D6$ represent 0.0% in active maintained kernel packages (distributions never mark core kernel CVEs as "Won't Fix" or "EOL"). We formulated the binary target as **Protracted Downstream Exposure ($\ge 90$ days)**. Because our snapshot was taken in 2026, all prospective test CVEs from 2024–2025 have had 14 to 26 months of observation history, confirming that $D1$ instances reflect genuine protracted exposure rather than recent censoring.
+5. **Release-Time Validity & Eliminating Anachronisms:** We instituted a strict **Release-Time Validity Protocol**: every CVE-release observation is restricted to releases that actively existed at vulnerability disclosure. We pruned 508 pre-release observations of Ubuntu Noble (released April 25, 2024) for CVEs disclosed in early 2024, eliminating any potential release anachronism ($N_{\text{test}} = 32,536$, $N_{\text{train}} = 22,204$).
+6. **Reconciled Benchmark Numbers with 95% Bootstrap CIs & Synchronized Figures:** All benchmark numbers across the Abstract, Table 2, Table 3, and all four publication figures (`fig1`–`fig4`) are completely synchronized and accompanied by 95% bootstrap confidence intervals ($B = 1,000$).
+7. **Dataset Year Range & Intersection Funnel Clarification:** We corrected the erroneous typographical mention of "2005--2025" in Section 3 to clarify that the study analyzes all 9,208 kernel vulnerabilities disclosed between **2022 and 2025** (spanning modern Linux kernel LTS releases 5.4 through 6.12). We clarified why Canonical Ubuntu's curated registry (9,210 records) bounds the 4-way intersection (9,208 records, 99.98% coverage with commit hashes) across NVD (12,176), Linux Kernel CVE JSON (9,469), and Debian (10,131).
+8. **Survival Analysis Estimand Rigor:** We eliminated naive ad-hoc pooling of unresolved cases and strictly differentiated the formal statistical estimands:
    - *Completed-Case Delay:* 69.3% of resolved cases require $>90$ days (median 258.8 days; mean 306.6 days; 21.4% $>365$ days).
    - *Kaplan-Meier Survival Probability $\hat{S}(t)$:* $\hat{S}(30) = 0.8735$, $\hat{S}(90) = 0.7764$ [95% CI: 0.7729, 0.7799], $\hat{S}(180) = 0.7106$, $\hat{S}(365) = 0.5467$, modeling $D1$ as right-censored and any terminal unpatched state as absorbing ($T=\infty$).
-   - *Total Cohort Exposure:* 77.6% ($42,895 / 55,248$) of all evaluated downstream release instances experienced an exposure window $\ge 90$ days.
-8. **Minor Textual Corrections:** Corrected all typographical items ("unpacked" $\rightarrow$ "unpatched" in Highlights; Equation (2) product formatting; GitHub repository URL; scoped claims to Debian/Ubuntu).
+9. **Minor Textual Corrections:** Corrected all typographical items ("unpacked" $\rightarrow$ "unpatched" in Highlights; Equation (2) product formatting; GitHub repository URL; scoped claims to Debian/Ubuntu).
 
 ---
 
@@ -119,14 +119,14 @@ We have expanded Section 3.2 to document the exact attrition counts across all f
 > *"The paper says D5 ('Won't Fix') is modeled as right-censored. That is methodologically wrong. A 'Won't Fix' state is a terminal unpatched outcome... Distinguish: 1) percentage of resolved cases taking >90 days, 2) survival probability at 90 days, 3) percentage of all vulnerable downstream instances exposed after 90 days."*
 
 **Response:**  
-We appreciate this statistical correction. In Section 4.1, 4.2, and 4.3, we have explicitly differentiated the three estimands and clarified the survival mechanics:
+We appreciate this statistical correction. In Section 4.1, 4.2, and 4.3, we have explicitly differentiated the estimands and clarified the survival mechanics:
 1. **Completed-Case Remediation Delay:** Among the 40,198 resolved instances ($D2, D3$), median latency is 258.8 days, 69.3% take $>90$ days, and 21.4% take $>365$ days.
 2. **Kaplan-Meier Survival Probability $\hat{S}(t)$:** In our non-parametric survival analysis, unresolved instances ($D1$) are right-censored at observation cutoff, while any terminal unpatched states ($D5$) are treated as absorbing unpatched exposure ($T = \infty$). Using Greenwood's formula, the empirical survival probabilities are:
    - $\hat{S}(30) = 0.8735$ [95% CI: 0.8707, 0.8763]
    - $\hat{S}(90) = 0.7764$ [95% CI: 0.7729, 0.7799]
    - $\hat{S}(180) = 0.7106$ [95% CI: 0.7068, 0.7144]
    - $\hat{S}(365) = 0.5467$ [95% CI: 0.5425, 0.5508]
-3. **Total Cohort Exposure Window:** Across all 55,248 evaluated instances, 15,050 remain unpatched at snapshot ($D1$), and 27,845 resolved cases required $>90$ days. Thus, **77.6%** ($42,895 / 55,248$) of all evaluated downstream release instances experienced an active exposure window $\ge 90$ days.
+3. **Elimination of the Ad-Hoc 77.6% Figure:** In the previous draft, an ad-hoc figure of 77.6% was computed by naively pooling unpatched instances with resolved cases taking $>90$ days. As the reviewer rightly pointed out, this pooled completed cases with right-censored observations without proper censoring mechanics. We have completely removed this ad-hoc percentage from the manuscript text and figures, relying strictly on the formal Kaplan-Meier survival curve ($\hat{S}(90) = 0.7764$) for cohort-wide ongoing exposure and completed-case statistics (69.3%) for resolved patches.
 
 ---
 

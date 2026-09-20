@@ -1,5 +1,6 @@
 import json
 import logging
+import shutil
 from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
@@ -10,12 +11,10 @@ import pandas as pd
 from sklearn.metrics import roc_curve, precision_recall_curve, roc_auc_score, average_precision_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import make_pipeline
 import lightgbm as lgb
 import xgboost as xgb
-
-from src.model.feature_builder import FeatureBuilder
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -35,24 +34,99 @@ plt.rcParams.update({
     'savefig.bbox': 'tight'
 })
 
-class PaperFigureGenerator:
-    """Generates publication-quality figures for top-tier security conferences."""
+KERNEL_VERSION_MAP = {
+    'focal': 5.4,
+    'jammy': 5.15,
+    'noble': 6.8,
+    'bookworm': 6.1,
+    'sid': 6.8,
+    'trixie': 6.12
+}
 
-    def __init__(self, pilot_dir: str = "data/pilot", output_dir: str = "figures"):
+LTS_MAP = {
+    'focal': 1,
+    'jammy': 1,
+    'noble': 1,
+    'bookworm': 1,
+    'sid': 0,
+    'trixie': 0
+}
+
+RELEASE_DATES = {
+    'focal': '2020-04-23',
+    'jammy': '2022-04-21',
+    'noble': '2024-04-25',
+    'bookworm': '2023-06-10',
+    'sid': '2000-01-01',
+    'trixie': '2023-06-10'
+}
+
+class CleanPaperFigureGenerator:
+    """Generates synchronized publication figures for DownstreamSec."""
+
+    def __init__(self, pilot_dir: str = "data/pilot", output_dir: str = "figures", paper_figures_dir: str = "paper/figures"):
         self.pilot_dir = Path(pilot_dir)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.builder = FeatureBuilder(str(self.pilot_dir))
+        self.paper_figures_dir = Path(paper_figures_dir)
+        self.paper_figures_dir.mkdir(parents=True, exist_ok=True)
 
-    def generate_fig1_remediation_latency(self) -> None:
-        """Figure 1: Empirical Patch Lag & Survival Curves (Debian vs Ubuntu)."""
+    def load_clean_data(self):
+        df_a = pd.read_parquet(self.pilot_dir / "table_a_vulnerability.parquet")
+        df_b = pd.read_parquet(self.pilot_dir / "table_b_upstream_patch.parquet")
+        df_c = pd.read_parquet(self.pilot_dir / "table_c_downstream_state.parquet")
+
+        df = df_c.merge(df_a, on='cve_id', how='left')
+        df = df.merge(
+            df_b[['cve_id', 'files_changed_count', 'loc_added', 'loc_deleted', 'loc_delta', 'patch_hunks', 'commit_message_length', 'is_single_file_fix']],
+            on='cve_id',
+            how='left'
+        )
+        df['downstream_kernel_ver'] = df['downstream_version'].map(KERNEL_VERSION_MAP).fillna(6.0)
+        df['is_lts'] = df['downstream_version'].map(LTS_MAP).fillna(0)
+        df['cve_year'] = df['cve_id'].apply(lambda x: int(x.split('-')[1]) if '-' in x else 2024)
+
+        # Release validity filtering (zero anachronisms)
+        df['rel_start'] = df['downstream_version'].map(RELEASE_DATES)
+        df['pub_date'] = df['published_at'].str.slice(0, 10)
+        df = df[df['pub_date'] >= df['rel_start']].copy()
+
+        cat_cols = ['downstream', 'downstream_version', 'attack_vector', 'attack_complexity', 'affected_component', 'vulnerability_type']
+        num_cols = ['cvss', 'reference_count', 'files_changed_count', 'loc_added', 'loc_deleted', 'loc_delta', 'patch_hunks', 'commit_message_length', 'downstream_kernel_ver', 'is_lts', 'is_single_file_fix']
+
+        for c in num_cols:
+            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0.0)
+        for c in cat_cols:
+            df[c] = df[c].fillna('unknown').astype(str)
+
+        train_mask = df['cve_year'] <= 2023
+        test_mask = df['cve_year'] >= 2024
+
+        df_train = df[train_mask].copy()
+        df_test = df[test_mask].copy()
+
+        encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+        train_cat = encoder.fit_transform(df_train[cat_cols])
+        test_cat = encoder.transform(df_test[cat_cols])
+
+        feature_names = num_cols + list(encoder.get_feature_names_out(cat_cols))
+
+        X_train = np.hstack([df_train[num_cols].values, train_cat])
+        X_test = np.hstack([df_test[num_cols].values, test_cat])
+
+        y_train = (df_train['security_state_binary'] == 'EXPOSED').astype(int).values
+        y_test = (df_test['security_state_binary'] == 'EXPOSED').astype(int).values
+
+        return X_train, y_train, X_test, y_test, feature_names
+
+    def generate_fig1(self) -> None:
+        """Figure 1: Empirical Remediation Latency & Survival Curves."""
         logging.info("Generating Figure 1: Remediation Latency & Survival Curves...")
         df_d = pd.read_parquet(self.pilot_dir / "table_d_temporal_events.parquet")
         df_down = df_d[df_d['downstream'].isin(['debian', 'ubuntu']) & df_d['remediation_latency_days'].notnull()].copy()
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
 
-        # (a) Cumulative Distribution Function (ECDF)
         deb_lat = df_down[df_down['downstream'] == 'debian']['remediation_latency_days']
         ub_lat = df_down[df_down['downstream'] == 'ubuntu']['remediation_latency_days']
 
@@ -74,7 +148,6 @@ class PaperFigureGenerator:
         ax1.set_title('(a) Cumulative Patch Remediation ECDF')
         ax1.legend(loc='lower right', frameon=True)
 
-        # (b) Empirical Survival Curve S(t) = P(Latency > t)
         t_range = np.linspace(0, 730, 300)
         deb_surv = [(deb_lat > t).mean() * 100 for t in t_range]
         ub_surv = [(ub_lat > t).mean() * 100 for t in t_range]
@@ -93,25 +166,24 @@ class PaperFigureGenerator:
         ax2.legend(loc='upper right', frameon=True)
 
         plt.tight_layout()
-        plt.savefig(self.output_dir / "fig1_survival_remediation_latency.pdf")
-        plt.savefig(self.output_dir / "fig1_survival_remediation_latency.png")
+        for p in [self.output_dir, self.paper_figures_dir]:
+            plt.savefig(p / "fig1_survival_remediation_latency.pdf")
+            plt.savefig(p / "fig1_survival_remediation_latency.png")
         plt.close()
-        logging.info("Saved Figure 1 to fig1_survival_remediation_latency.{pdf,png}")
 
-    def generate_fig2_roc_pr_curves(self) -> None:
-        """Figure 2: Model Performance ROC & Precision-Recall Curves (Prospective Out-of-Time Test)."""
-        logging.info("Generating Figure 2: ROC & PR Performance Curves...")
-        df = self.builder.load_merged_data()
-        X_train, y_train, _, X_test, y_test, _, _ = self.builder.get_feature_matrix(df)
+    def generate_fig2(self) -> None:
+        """Figure 2: Model Performance ROC & PR Curves (Synchronized to Table 2)."""
+        logging.info("Generating Figure 2: Synchronized ROC & PR Curves...")
+        X_train, y_train, X_test, y_test, _ = self.load_clean_data()
 
         models = {
             "XGBoost": xgb.XGBClassifier(n_estimators=150, learning_rate=0.05, max_depth=6, eval_metric='logloss', random_state=42, n_jobs=-1),
-            "LightGBM": lgb.LGBMClassifier(n_estimators=150, learning_rate=0.05, class_weight='balanced', random_state=42, verbose=-1),
             "Logistic Regression": make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000, class_weight='balanced', random_state=42)),
+            "LightGBM": lgb.LGBMClassifier(n_estimators=150, learning_rate=0.05, class_weight='balanced', random_state=42, verbose=-1),
             "Random Forest": RandomForestClassifier(n_estimators=150, max_depth=12, class_weight='balanced', random_state=42, n_jobs=-1)
         }
 
-        palette = {'XGBoost': '#2ca02c', 'LightGBM': '#1f77b4', 'Logistic Regression': '#9467bd', 'Random Forest': '#d62728'}
+        palette = {'XGBoost': '#2ca02c', 'Logistic Regression': '#9467bd', 'LightGBM': '#1f77b4', 'Random Forest': '#d62728'}
 
         fig, (ax_roc, ax_pr) = plt.subplots(1, 2, figsize=(13, 5))
 
@@ -119,17 +191,14 @@ class PaperFigureGenerator:
             clf.fit(X_train, y_train)
             probs = clf.predict_proba(X_test)[:, 1]
 
-            # ROC
             fpr, tpr, _ = roc_curve(y_test, probs)
             auc = roc_auc_score(y_test, probs)
-            ax_roc.plot(fpr, tpr, label=f'{name} (AUC = {auc:.3f})', color=palette[name], lw=2.0)
+            ax_roc.plot(fpr, tpr, label=f'{name} (AUC = {auc:.3f})', color=palette[name], lw=2.2)
 
-            # PR
             prec, rec, _ = precision_recall_curve(y_test, probs)
             pr_auc = average_precision_score(y_test, probs)
-            ax_pr.plot(rec, prec, label=f'{name} (PR-AUC = {pr_auc:.3f})', color=palette[name], lw=2.0)
+            ax_pr.plot(rec, prec, label=f'{name} (PR-AUC = {pr_auc:.3f})', color=palette[name], lw=2.2)
 
-        # Baseline curves
         ax_roc.plot([0, 1], [0, 1], 'k--', lw=1.5, alpha=0.7, label='Chance (AUC = 0.500)')
         ax_roc.set_xlim([0.0, 1.0])
         ax_roc.set_ylim([0.0, 1.05])
@@ -148,74 +217,68 @@ class PaperFigureGenerator:
         ax_pr.legend(loc="upper right", frameon=True)
 
         plt.tight_layout()
-        plt.savefig(self.output_dir / "fig2_roc_pr_curves.pdf")
-        plt.savefig(self.output_dir / "fig2_roc_pr_curves.png")
+        for p in [self.output_dir, self.paper_figures_dir]:
+            plt.savefig(p / "fig2_roc_pr_curves.pdf")
+            plt.savefig(p / "fig2_roc_pr_curves.png")
         plt.close()
-        logging.info("Saved Figure 2 to fig2_roc_pr_curves.{pdf,png}")
 
-    def generate_fig3_feature_importance(self) -> None:
-        """Figure 3: Relative Importance of Pre-Remediation Predictors."""
-        logging.info("Generating Figure 3: Feature Importance Analysis...")
-        feat_path = Path("results/rq1_feature_importance.json")
-        if not feat_path.exists():
-            return
-        
-        with open(feat_path, "r", encoding="utf-8") as f:
-            feat_data = json.load(f)
+    def generate_fig3(self) -> None:
+        """Figure 3: Top Day-Zero Feature Importances (Zero Post-Disclosure Signals)."""
+        logging.info("Generating Figure 3: Day-Zero Feature Importances...")
+        X_train, y_train, X_test, y_test, feature_names = self.load_clean_data()
 
-        # Use LightGBM feature frequencies
-        lgb_feats = feat_data.get("LightGBM", {})
-        top_items = list(lgb_feats.items())[:12]
-        names = [k for k, _ in top_items][::-1]
-        vals = [v for _, v in top_items][::-1]
+        clf = xgb.XGBClassifier(n_estimators=150, learning_rate=0.05, max_depth=6, eval_metric='logloss', random_state=42, n_jobs=-1)
+        clf.fit(X_train, y_train)
 
-        # Normalized values
-        max_v = max(vals) if vals else 1
-        norm_vals = [v / max_v * 100 for v in vals]
+        importances = clf.feature_importances_
+        sorted_idx = np.argsort(importances)[::-1][:12]
 
-        # Clean display names
+        top_names = [feature_names[i] for i in sorted_idx][::-1]
+        top_vals = [importances[i] for i in sorted_idx][::-1]
+
+        max_v = max(top_vals) if top_vals else 1.0
+        norm_vals = [v / max_v * 100 for v in top_vals]
+
         label_map = {
             'commit_message_length': 'Commit Message Length (chars)',
-            'reference_count': 'Advisory Reference Count',
-            'stable_backport_count': 'Upstream Stable Backport Branches',
-            'downstream_kernel_ver': 'Downstream Base Kernel Version',
-            'cvss': 'CVSS v3.1 Severity Score',
-            'loc_delta': 'Patch Code Churn (Added - Deleted)',
-            'loc_added': 'Patch Lines Added (LOC)',
-            'files_changed_count': 'Files Modified in Fix',
             'patch_hunks': 'Patch Hunk Count',
-            'is_single_file_fix': 'Single-File Fix Boolean',
-            'is_lts': 'LTS Distribution Indicator',
+            'files_changed_count': 'Files Modified in Patch',
+            'downstream_kernel_ver': 'Downstream Base Kernel Version',
+            'is_lts': 'LTS Release Indicator',
+            'cvss': 'CVSS v3.1 Base Score',
+            'reference_count': 'Initial Advisory References',
+            'loc_delta': 'Patch Net Churn (LOC Delta)',
+            'loc_added': 'Patch Lines Added',
+            'loc_deleted': 'Patch Lines Deleted',
+            'is_single_file_fix': 'Single-File Surgical Patch',
             'downstream_ubuntu': 'Ecosystem: Ubuntu Pipeline',
             'downstream_debian': 'Ecosystem: Debian Pipeline'
         }
-        display_names = [label_map.get(n, n) for n in names]
+        clean_labels = [label_map.get(n, n) for n in top_names]
 
         plt.figure(figsize=(10, 6))
         colors = sns.color_palette("Blues_r", len(norm_vals))
 
-        bars = plt.barh(display_names, norm_vals, color=colors, edgecolor='gray', height=0.65)
+        bars = plt.barh(clean_labels, norm_vals, color=colors, edgecolor='gray', height=0.65)
         for bar in bars:
             w = bar.get_width()
             plt.text(w + 1.2, bar.get_y() + bar.get_height() / 2, f'{w:.1f}%', ha='left', va='center', fontsize=9.5, fontweight='bold')
 
         plt.xlim(0, 115)
         plt.xlabel('Relative Feature Importance Score (%)')
-        plt.title('Top Pre-Remediation Predictors of Downstream Vulnerability Exposure')
+        plt.title('Top Day-Zero Pre-Remediation Predictors of Downstream Exposure')
         plt.tight_layout()
-        plt.savefig(self.output_dir / "fig3_feature_importance.pdf")
-        plt.savefig(self.output_dir / "fig3_feature_importance.png")
+        for p in [self.output_dir, self.paper_figures_dir]:
+            plt.savefig(p / "fig3_feature_importance.pdf")
+            plt.savefig(p / "fig3_feature_importance.png")
         plt.close()
-        logging.info("Saved Figure 3 to fig3_feature_importance.{pdf,png}")
 
-    def generate_fig4_taxonomy_distribution(self) -> None:
+    def generate_fig4(self) -> None:
         """Figure 4: Security State Taxonomy (D0–D6) Distribution Across Releases."""
         logging.info("Generating Figure 4: Taxonomy Distribution across Releases...")
         df_c = pd.read_parquet(self.pilot_dir / "table_c_downstream_state.parquet")
 
         ct = pd.crosstab(df_c['downstream_version'], df_c['security_state'], normalize='index') * 100
-
-        # Order releases chronologically by ecosystem
         release_order = ['focal', 'jammy', 'noble', 'bookworm', 'sid', 'trixie']
         existing_order = [r for r in release_order if r in ct.index]
         ct = ct.loc[existing_order]
@@ -231,13 +294,10 @@ class PaperFigureGenerator:
         ct.index = [display_labels.get(i, i) for i in ct.index]
 
         state_colors = {
-            'D0_not_affected': '#2ca02c',      # Green
-            'D2_fixed_equivalent': '#1f77b4',  # Blue
-            'D3_modified_fix': '#aec7e8',      # Light blue
-            'D1_vulnerable': '#d62728',        # Red
-            'D4_partial_fix': '#ff7f0e',       # Orange
-            'D5_config_unreachable': '#8c564b',
-            'D6_uncertain': '#7f7f7f'
+            'D0_not_affected': '#2ca02c',
+            'D2_fixed_equivalent': '#1f77b4',
+            'D3_modified_fix': '#aec7e8',
+            'D1_vulnerable': '#d62728'
         }
 
         fig, ax = plt.subplots(figsize=(11, 5.5))
@@ -257,18 +317,18 @@ class PaperFigureGenerator:
         ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.22), ncol=4, frameon=True)
 
         plt.tight_layout()
-        plt.savefig(self.output_dir / "fig4_security_state_taxonomy.pdf")
-        plt.savefig(self.output_dir / "fig4_security_state_taxonomy.png")
+        for p in [self.output_dir, self.paper_figures_dir]:
+            plt.savefig(p / "fig4_security_state_taxonomy.pdf")
+            plt.savefig(p / "fig4_security_state_taxonomy.png")
         plt.close()
-        logging.info("Saved Figure 4 to fig4_security_state_taxonomy.{pdf,png}")
 
     def run(self) -> None:
-        self.generate_fig1_remediation_latency()
-        self.generate_fig2_roc_pr_curves()
-        self.generate_fig3_feature_importance()
-        self.generate_fig4_taxonomy_distribution()
-        logging.info("All 4 paper figures generated successfully.")
+        self.generate_fig1()
+        self.generate_fig2()
+        self.generate_fig3()
+        self.generate_fig4()
+        logging.info("All synchronized publication figures generated and copied to figures/ and paper/figures/.")
 
 if __name__ == "__main__":
-    generator = PaperFigureGenerator()
-    generator.run()
+    gen = CleanPaperFigureGenerator()
+    gen.run()
