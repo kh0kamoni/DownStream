@@ -1,7 +1,7 @@
 \begin{itemize}
-    \item Constructed a longitudinal multi-ecosystem dataset tracing 9,208 Linux kernel CVEs across upstream and 6 Debian/Ubuntu releases without synthetic data.
+    \item Constructed a longitudinal multi-ecosystem dataset tracing 9,208 Linux kernel CVEs across upstream and six Debian/Ubuntu releases without synthetic data.
     \item Formulated a 7-state taxonomy ($D0$--$D6$) capturing patch propagation, code divergence, and backport modification dynamics.
-    \item Empirical measurement uncovers a median patch lag of 258.8 days, with 69.3\% of vulnerabilities remaining unpatched downstream beyond 90 days.
-    \item Developed pre-remediation ML models predicting downstream exposure at upstream disclosure with ROC-AUC = 0.8072 under a strict out-of-time temporal split.
-    \item Established that upstream stable tree backport volume and downstream kernel baseline divergence serve as primary drivers of propagation.
+    \item Empirical measurement uncovers a median patch lag of 258.8 days, with 69.3\% of resolved vulnerabilities requiring $>90$ days to receive package fixes (Kaplan-Meier survival probability $\hat{S}(90) = 0.78$).
+    \item Developed strict day-zero pre-remediation ML models predicting downstream exposure at disclosure with ROC-AUC = 0.8114 and PR-AUC = 0.4946 under out-of-time evaluation.
+    \item Demonstrated that downstream kernel baseline divergence, patch complexity, and subsystem exposure serve as key predictive indicators of downstream risk.
 \end{itemize}
