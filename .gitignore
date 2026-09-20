@@ -24,3 +24,14 @@ Thumbs.db
 
 # Logs
 *.log
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.spl
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
