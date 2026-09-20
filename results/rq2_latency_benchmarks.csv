@@ -1,0 +1,6 @@
+Model,MAE (Days),Median-AE (Days),RMSE (Days),R2-Score
+Random Forest,234.12,209.85,291.4,-0.1644
+Median Baseline,237.97,236.73,270.97,-0.0068
+XGBoost,250.86,236.49,300.29,-0.2364
+LightGBM,273.13,247.19,328.96,-0.4838
+Ridge Regression,279.14,272.33,325.95,-0.4568

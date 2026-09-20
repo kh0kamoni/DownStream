@@ -1,0 +1,82 @@
+{
+    "pilot_verdict": "PASS",
+    "total_cves_selected": 9208,
+    "total_cves_resolved": 9208,
+    "total_downstream_records": 55248,
+    "coverage": {
+        "upstream_commits_identified": 9208
+    },
+    "label_distribution": {
+        "security_state": {
+            "D3_modified_fix": 29672,
+            "D1_vulnerable": 15050,
+            "D2_fixed_equivalent": 10315,
+            "D0_not_affected": 211
+        },
+        "binary_label": {
+            "NOT_EXPOSED": 40198,
+            "EXPOSED": 15050
+        },
+        "per_ecosystem": {
+            "EXPOSED": {
+                "debian": 575,
+                "ubuntu": 14475
+            },
+            "NOT_EXPOSED": {
+                "debian": 27049,
+                "ubuntu": 13149
+            }
+        }
+    },
+    "temporal": {
+        "latency_records": 40198,
+        "mean": 306.59795313199663,
+        "median": 258.77,
+        "std": 255.96215560367665,
+        "min": 0.0,
+        "max": 1203.11
+    },
+    "quality": {},
+    "diversity": {
+        "cwe_distribution": {
+            "unknown": 3633,
+            "CWE-476": 1513,
+            "CWE-416": 877,
+            "CWE-401": 722,
+            "CWE-667": 383,
+            "CWE-125": 343,
+            "CWE-362": 296,
+            "CWE-787": 288,
+            "CWE-908": 207,
+            "CWE-415": 133
+        },
+        "cvss_distribution": {
+            "(5.0, 7.5]": 5009,
+            "(7.5, 10.0]": 3064,
+            "(-0.011, 2.5]": 899,
+            "(2.5, 5.0]": 236
+        }
+    },
+    "criteria": {
+        "criterion_1_cves_resolved": {
+            "target": 80,
+            "actual": 9208,
+            "pass": true
+        },
+        "criterion_2_records": {
+            "target": 500,
+            "actual": 55248,
+            "pass": true
+        },
+        "criterion_3_accuracy": {
+            "target": 90,
+            "actual": "pending",
+            "pass": "DEFERRED"
+        },
+        "criterion_4_latency": {
+            "target": "70%",
+            "actual": "72.8%",
+            "pass": true
+        }
+    }
+}

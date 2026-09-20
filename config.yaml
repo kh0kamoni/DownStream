@@ -1,0 +1,87 @@
+# DownstreamSec Configuration
+# All paths are relative to the project root unless absolute
+
+project:
+  name: "DownstreamSec"
+  version: "0.1.0"
+  phase: "pilot"
+
+# NVD API configuration
+nvd:
+  base_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+  api_key: null  # Optional: obtain free key at https://nvd.nist.gov/developers/request-an-api-key
+  # Kernel CNA source identifier (for 2024+ CVEs)
+  kernel_cna_id: "416baaa9-dc9f-4396-8d5f-8c081fb06d67"
+  # CPE match string for all historical kernel CVEs
+  kernel_cpe: "cpe:2.3:o:linux:linux_kernel"
+  rate_limit_delay: 6.0       # seconds between requests (no API key)
+  rate_limit_delay_keyed: 0.7  # seconds between requests (with API key)
+  results_per_page: 2000
+  max_date_range_days: 120     # NVD enforces 120-day windows
+
+# Kernel vulns.git configuration
+kernel_vulns:
+  repo_url: "https://git.kernel.org/pub/scm/linux/security/vulns.git/"
+  local_path: "data/repos/vulns"
+
+# OSV configuration
+osv:
+  bulk_url: "https://osv-vulnerabilities.storage.googleapis.com/Linux/all.zip"
+  local_path: "data/raw/osv"
+
+# Linux kernel source (for patch extraction)
+kernel_source:
+  repo_url: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+  github_mirror: "https://github.com/torvalds/linux"
+  local_path: "data/repos/linux-stable"
+  # Use GitHub API for commit metadata if full clone is not available
+  use_github_api_fallback: true
+
+# Debian Security Tracker
+debian:
+  json_url: "https://security-tracker.debian.org/tracker/data/json"
+  repo_url: "https://salsa.debian.org/security-tracker-team/security-tracker.git"
+  local_path: "data/repos/debian-security-tracker"
+  package_filter: "linux"
+  # Target releases (codename -> version number)
+  releases:
+    bullseye: "11"
+    bookworm: "12"
+    trixie: "13"
+    sid: "unstable"
+
+# Ubuntu CVE Tracker
+ubuntu:
+  api_url: "https://ubuntu.com/security/cves.json"
+  repo_url: "https://git.launchpad.net/ubuntu-cve-tracker"
+  local_path: "data/repos/ubuntu-cve-tracker"
+  package_filter: "linux"
+  # Target releases (codename -> version)
+  releases:
+    focal: "20.04"
+    jammy: "22.04"
+    noble: "24.04"
+
+# Pilot configuration
+pilot:
+  target_cve_count: 9208
+  cve_year_range: [2022, 2025]
+  # Minimum requirements for a CVE to be selected
+  min_downstream_releases: 2  # per ecosystem
+  min_ecosystems: 2           # must appear in at least 2 of {debian, ubuntu}
+  # Diversity targets
+  diversity:
+    min_cwe_types: 5
+    min_severity_levels: 3    # at least LOW, MEDIUM, HIGH
+    target_exposed_ratio: 0.3 # aim for ~30% exposed labels
+
+# Output paths
+output:
+  raw_dir: "data/raw"
+  pilot_dir: "data/pilot"
+  repos_dir: "data/repos"
+
+# Logging
+logging:
+  level: "INFO"
+  file: "data/pilot/pipeline.log"

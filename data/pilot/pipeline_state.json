@@ -1,0 +1,79 @@
+{
+    "ingest_nvd": {
+        "description": "Ingest NVD data",
+        "status": "success",
+        "start_time": "2026-09-20T10:55:36.586135",
+        "end_time": "2026-09-20T11:00:49.499237",
+        "duration_seconds": 312.9126830101013
+    },
+    "ingest_kernel_vulns": {
+        "description": "Ingest kernel vulns.git",
+        "status": "success",
+        "start_time": "2026-09-20T11:00:49.499993",
+        "end_time": "2026-09-20T11:12:02.677807",
+        "duration_seconds": 673.1773064136505
+    },
+    "ingest_osv": {
+        "description": "Ingest OSV bulk export",
+        "status": "success",
+        "start_time": "2026-09-20T11:12:02.678822",
+        "end_time": "2026-09-20T11:12:30.985514",
+        "duration_seconds": 28.30607795715332
+    },
+    "ingest_debian": {
+        "description": "Ingest Debian tracker",
+        "status": "success",
+        "start_time": "2026-09-20T11:12:30.986327",
+        "end_time": "2026-09-20T11:13:45.130194",
+        "duration_seconds": 74.14330220222473
+    },
+    "ingest_ubuntu": {
+        "description": "Ingest Ubuntu tracker",
+        "status": "success",
+        "start_time": "2026-09-20T11:31:53.108632",
+        "end_time": "2026-09-20T11:52:40.953937",
+        "duration_seconds": 1247.8450782299042
+    },
+    "select": {
+        "description": "Select 100 CVEs",
+        "status": "success",
+        "start_time": "2026-09-20T11:52:40.954691",
+        "end_time": "2026-09-20T11:56:42.371207",
+        "duration_seconds": 241.41632509231567
+    },
+    "build_table_a": {
+        "description": "Build vulnerability table",
+        "status": "success",
+        "start_time": "2026-09-20T12:16:04.491317",
+        "end_time": "2026-09-20T12:16:04.968199",
+        "duration_seconds": 0.476776123046875
+    },
+    "build_table_b": {
+        "description": "Build upstream patch table",
+        "status": "success",
+        "start_time": "2026-09-20T12:16:04.968853",
+        "end_time": "2026-09-20T12:16:05.183707",
+        "duration_seconds": 0.21451520919799805
+    },
+    "build_table_c": {
+        "description": "Build downstream state table",
+        "status": "success",
+        "start_time": "2026-09-20T12:16:05.185536",
+        "end_time": "2026-09-20T12:16:05.300065",
+        "duration_seconds": 0.1143488883972168
+    },
+    "build_table_d": {
+        "description": "Build temporal events table",
+        "status": "success",
+        "start_time": "2026-09-20T12:16:05.302140",
+        "end_time": "2026-09-20T12:16:05.781480",
+        "duration_seconds": 0.4791378974914551
+    },
+    "evaluate": {
+        "description": "Generate coverage report",
+        "status": "success",
+        "start_time": "2026-09-20T12:16:05.782251",
+        "end_time": "2026-09-20T12:16:05.824563",
+        "duration_seconds": 0.042231082916259766
+    }
+}
