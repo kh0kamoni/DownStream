@@ -6,6 +6,7 @@ data/pilot/*.csv
 # Paper drafts and manuscript sources
 paper/
 ficta_paper/
+cis_paper/
 
 # Python
 __pycache__/
