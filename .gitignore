@@ -35,3 +35,7 @@ Thumbs.db
 *.toc
 *.fls
 *.fdb_latexmk
+*.idx
+*.thm
+*.ilg
+*.ind
