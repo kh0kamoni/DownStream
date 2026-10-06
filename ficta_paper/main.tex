@@ -29,14 +29,13 @@
 
 \begin{document}
 
-\title*{DownstreamSec: Dissecting and Predicting Vulnerability Propagation and Security Exposure in Debian and Ubuntu Kernel Ecosystems}
-\titlerunning{DownstreamSec: Predicting Downstream Vulnerability Propagation}
+\title*{DownstreamSec: Predicting Kernel Vulnerability Exposure in Debian and Ubuntu on Day Zero}
+\titlerunning{DownstreamSec: Predicting Kernel Vulnerability Exposure on Day Zero}
 
-\author{Khoka Moni\inst{1} and A. K. M. Ariful Haque\inst{1}}
-\authorrunning{K. Moni and A. K. M. A. Haque}
+\author{Anonymous Author(s)}
+\authorrunning{Anonymous Author(s)}
 
-\institute{Khoka Moni \at Department of Computer Science and Engineering, Southeast University, Dhaka, Bangladesh, \email{kh0kamoni@research.org}
-\and A. K. M. Ariful Haque \at Department of Computer Science and Engineering, Southeast University, Dhaka, Bangladesh, \email{ariful.haque@research.org}}
+\institute{Affiliation(s) and email(s) withheld for double-blind peer review}
 
 \maketitle
 
@@ -233,10 +232,10 @@ On held-out Ubuntu 24.04 (\textit{Noble}), the transfer model attains an ROC-AUC
 Our findings offer practical guidance across the software supply chain. For \textbf{downstream packagers}, waiting for public CVE advisories leaves systems exposed for hundreds of days; maintainers should deploy automated day-zero triage to flag difficult backports the day upstream commits land, leveraging live-patching tools (\texttt{kpatch}, \texttt{livepatch}) to deliver urgent fixes without waiting for monolithic rebuild cycles. For \textbf{upstream maintainers}, backport friction decreases substantially when developers annotate patches with \texttt{Cc: stable@vger.kernel.org} and document tricky dependencies. For \textbf{enterprise security teams}, vulnerability scanners must audit installed package versions rather than upstream Git commit dates: upstream fixes provide zero protection until downstream packages are rebuilt and deployed.
 
 We address four threats to validity:
-(1)~\textit{Construct}: All downstream states and timestamps were ingested directly from official Debian and Ubuntu trackers and verified against package changelogs.
-(2)~\textit{Internal}: We enforced strict out-of-time splits ($\le$2023 train, $\ge$2024 test), pruned pre-release anachronisms, and treated unpatched flaws as right-censored cases using Kaplan-Meier curves.
-(3)~\textit{External}: While focused on Debian and Ubuntu kernel ecosystems, these platforms form the foundation for hundreds of derivative distributions, cloud images, and container operating systems (e.g., Linux Mint, Pop!\_OS), which inherit identical delays.
-(4)~\textit{Conclusion and Sampling}: Requiring intersection across all four trackers isolates high-quality ground truth ($N = 9,208$ common CVEs, 55,248 observations). While this focus may mildly under-represent unconfirmed upstream reports, it ensures every analyzed record represents an authenticated issue with complete supply-chain provenance.
+(1)~\textit{Construct}: Downstream states and timestamps were ingested directly from official Debian and Ubuntu trackers and verified against package changelogs.
+(2)~\textit{Internal}: We enforced strict out-of-time splits ($\le$2023 train, $\ge$2024 test), pruned pre-release records, and modeled unpatched flaws with Kaplan-Meier curves.
+(3)~\textit{External}: While focused on Debian and Ubuntu, these systems underpin hundreds of derivative distributions and cloud images that inherit identical patch delays.
+(4)~\textit{Conclusion and Sampling}: Requiring four-way tracker intersection isolates verified ground truth ($N = 9,208$ common CVEs, 55,248 observations), ensuring complete supply-chain provenance.
 
 \section{Related Work}
 \label{sec:related}
@@ -252,14 +251,13 @@ We address four threats to validity:
 
 Downstream vulnerability exposure in open-source operating systems is driven by structural packaging dynamics rather than upstream code churn alone. Across 55,248 release observations spanning Debian and Ubuntu over two decades, downstream servers endure a median patch delay of 258.8 days after an upstream fix is committed, with 77.6\% remaining exposed past 90 days. Furthermore, this exposure is predictable on Day Zero: pre-remediation signals forecast downstream exposure with an ROC-AUC of 0.8114, enabling an operational triage policy that catches 94.3\% of protracted exposures while cutting maintainer review queues in half.
 
-Shortening the upstream-to-downstream delay requires two practical steps: (1)~automated patch-backporting tools that use Day-Zero triage signals to resolve conflicts before human review; and (2)~wider use of kernel live-patching to deliver security updates without waiting for full rebuild cycles.
-All raw datasets, processed tables, feature matrices, benchmark models, and reproduction scripts are openly available at: \url{https://github.com/kh0kamoni/DownStream}.
+Shortening the upstream-to-downstream delay requires two practical steps: (1)~automated patch-backporting tools that use Day-Zero triage signals to resolve conflicts before human review; and (2)~wider use of kernel live-patching to deliver security updates without waiting for full rebuild cycles. All raw datasets, processed tables, feature matrices, benchmark models, and reproduction scripts are available in an anonymized repository for peer review: \url{https://anonymous.4open.science/r/DownStream-Replication} (and will be linked to the public repository upon publication).
 
 \section*{Disclosure on the Use of Generative AI}
 During the preparation of this work, the authors used large language models (generative AI) solely to assist in editing language fluency, improving clarity of expression, and correcting grammatical mistakes. All empirical data collection, data processing pipelines, machine learning models, statistical evaluations, and research findings were conceived, conducted, and verified independently by the authors. The authors review and take full responsibility for the contents of this publication.
 
 \begin{acknowledgement}
-The authors thank the Debian Security Team, the Canonical Ubuntu Security Team, and the upstream Linux kernel security team for their tireless efforts in maintaining open-source operating system security.
+Acknowledgements are omitted for double-blind peer review and will be restored in the camera-ready version upon acceptance.
 \end{acknowledgement}
 
 \vspace{-0.2cm}
