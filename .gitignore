@@ -3,6 +3,9 @@ data/repos/
 data/raw/
 data/pilot/*.csv
 
+# Unblinded drafts
+paper/
+
 # Python
 __pycache__/
 *.py[cod]
