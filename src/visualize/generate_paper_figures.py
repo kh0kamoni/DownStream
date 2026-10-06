@@ -64,12 +64,14 @@ RELEASE_DATES = {
 class CleanPaperFigureGenerator:
     """Generates synchronized publication figures for DownstreamSec."""
 
-    def __init__(self, pilot_dir: str = "data/pilot", output_dir: str = "figures", paper_figures_dir: str = "paper/figures"):
+    def __init__(self, pilot_dir: str = "data/pilot", output_dir: str = "figures", paper_figures_dir: str = "paper/figures", ficta_figures_dir: str = "ficta_paper/figures"):
         self.pilot_dir = Path(pilot_dir)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.paper_figures_dir = Path(paper_figures_dir)
         self.paper_figures_dir.mkdir(parents=True, exist_ok=True)
+        self.ficta_figures_dir = Path(ficta_figures_dir)
+        self.ficta_figures_dir.mkdir(parents=True, exist_ok=True)
 
     def load_clean_data(self):
         df_a = pd.read_parquet(self.pilot_dir / "table_a_vulnerability.parquet")
@@ -166,7 +168,7 @@ class CleanPaperFigureGenerator:
         ax2.legend(loc='upper right', frameon=True)
 
         plt.tight_layout()
-        for p in [self.output_dir, self.paper_figures_dir]:
+        for p in [self.output_dir, self.paper_figures_dir, self.ficta_figures_dir]:
             plt.savefig(p / "fig1_survival_remediation_latency.pdf")
             plt.savefig(p / "fig1_survival_remediation_latency.png")
         plt.close()
@@ -217,7 +219,7 @@ class CleanPaperFigureGenerator:
         ax_pr.legend(loc="upper right", frameon=True)
 
         plt.tight_layout()
-        for p in [self.output_dir, self.paper_figures_dir]:
+        for p in [self.output_dir, self.paper_figures_dir, self.ficta_figures_dir]:
             plt.savefig(p / "fig2_roc_pr_curves.pdf")
             plt.savefig(p / "fig2_roc_pr_curves.png")
         plt.close()
@@ -277,7 +279,7 @@ class CleanPaperFigureGenerator:
         plt.xlabel('Relative Permutation Importance (% of Maximum ROC-AUC Drop)')
         plt.title('Prospective Permutation Feature Importance on Held-Out Test Set (Zero Lookahead)')
         plt.tight_layout()
-        for p in [self.output_dir, self.paper_figures_dir]:
+        for p in [self.output_dir, self.paper_figures_dir, self.ficta_figures_dir]:
             plt.savefig(p / "fig3_feature_importance.pdf")
             plt.savefig(p / "fig3_feature_importance.png")
         plt.close()
@@ -326,7 +328,7 @@ class CleanPaperFigureGenerator:
         ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.22), ncol=4, frameon=True)
 
         plt.tight_layout()
-        for p in [self.output_dir, self.paper_figures_dir]:
+        for p in [self.output_dir, self.paper_figures_dir, self.ficta_figures_dir]:
             plt.savefig(p / "fig4_security_state_taxonomy.pdf")
             plt.savefig(p / "fig4_security_state_taxonomy.png")
         plt.close()

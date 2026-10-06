@@ -85,7 +85,7 @@ Upstream Linux kernel development follows rapid 9-to-10 week release cycles, wit
 \label{fig:taxonomy}
 \end{figure}
 
-A manual audit of 100 stratified CVE-release samples by two human raters showed high inter-rater agreement (97.0\%, Cohen's $\kappa = 0.948$), and human consensus matched our automated pipeline on 99 of 100 cases ($\kappa = 0.981$). Figure~\ref{fig:taxonomy} shows how these security states are distributed across all six evaluated releases. In active production releases, states $D4$ (partial fix) and $D5$ (won't fix) account for 0.0\% of records because Debian and Ubuntu treat the kernel as core infrastructure, requiring full backports ($D2$/$D3$) for verified CVEs rather than workarounds or unpatched waivers. State $D6$ (EOL) is excluded by our release validity filtering.
+A manual audit of 100 stratified CVE-release samples by two human raters showed high inter-rater agreement (97.0\%, Cohen's $\kappa = 0.948$~\cite{cohen1960coefficient}), and human consensus matched our automated pipeline on 99 of 100 cases ($\kappa = 0.981$). Figure~\ref{fig:taxonomy} shows how these security states are distributed across all six evaluated releases. In active production releases, states $D4$ (partial fix) and $D5$ (won't fix) account for 0.0\% of records because Debian and Ubuntu treat the kernel as core infrastructure, requiring full backports ($D2$/$D3$) for verified CVEs rather than workarounds or unpatched waivers. State $D6$ (EOL) is excluded by our release validity filtering.
 
 \section{Longitudinal Multi-Source Dataset Construction}
 \label{sec:curation}
@@ -131,7 +131,7 @@ Measuring these timelines across 40,198 confirmed fixes shows that downstream pa
 
 \subsection{Survival Analysis: Debian vs. Ubuntu}
 
-Because some vulnerabilities remain unpatched at data collection, averaging only resolved cases would underestimate exposure. We use non-parametric \textbf{Kaplan-Meier survival analysis} to account for right-censoring:
+Because some vulnerabilities remain unpatched at data collection, averaging only resolved cases would underestimate exposure. We use non-parametric \textbf{Kaplan-Meier survival analysis}~\cite{kaplan1958nonparametric} to account for right-censoring:
 \begin{equation}
 \hat{S}(t) = \prod_{t_i \le t} \left(1 - \frac{d_i}{n_i}\right)
 \end{equation}
@@ -254,6 +254,9 @@ Downstream vulnerability exposure in open-source operating systems is driven by 
 
 Shortening the upstream-to-downstream delay requires two practical steps: (1)~automated patch-backporting tools that use Day-Zero triage signals to resolve conflicts before human review; and (2)~wider use of kernel live-patching to deliver security updates without waiting for full rebuild cycles.
 All raw datasets, processed tables, feature matrices, benchmark models, and reproduction scripts are openly available at: \url{https://github.com/kh0kamoni/DownStream}.
+
+\section*{Disclosure on the Use of Generative AI}
+During the preparation of this work, the authors used large language models (generative AI) solely to assist in editing language fluency, improving clarity of expression, and correcting grammatical mistakes. All empirical data collection, data processing pipelines, machine learning models, statistical evaluations, and research findings were conceived, conducted, and verified independently by the authors. The authors review and take full responsibility for the contents of this publication.
 
 \begin{acknowledgement}
 The authors thank the Debian Security Team, the Canonical Ubuntu Security Team, and the upstream Linux kernel security team for their tireless efforts in maintaining open-source operating system security.
