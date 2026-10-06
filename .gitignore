@@ -3,8 +3,9 @@ data/repos/
 data/raw/
 data/pilot/*.csv
 
-# Unblinded drafts
+# Paper drafts and manuscript sources
 paper/
+ficta_paper/
 
 # Python
 __pycache__/
